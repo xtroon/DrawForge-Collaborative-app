@@ -1,12 +1,14 @@
-import Toolbar from '../../components/canvas/Toolbar'
+import Toolbar from "../../components/canvas/Toolbar";
 
 function Workspace() {
   return (
     <>
-      <div>Workspace</div>
-      <Toolbar />
+      <div className="min-h-screen bg-black relative">
+        Workspace
+        <Toolbar />
+      </div>
     </>
-  )
+  );
 }
 
-export default Workspace
+export default Workspace;
