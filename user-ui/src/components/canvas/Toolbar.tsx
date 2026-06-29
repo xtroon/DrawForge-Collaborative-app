@@ -7,7 +7,11 @@ import {
   FaUndo,
   FaRedo,
   FaRegClone,
+  FaTh,
 } from "react-icons/fa";
+
+
+
 
 export default function Toolbar() {
   const [activeTool, setActiveTool] = useState<
@@ -82,34 +86,43 @@ export default function Toolbar() {
         </div>
 
         {/* Bottom Toolbar */}
-        <div className=" bg-gray-800 text-white shadow-xl rounded-2xl px-6 py-3 flex items-center gap-6">
-          <button onClick={() => setActiveTool("draw")}>
+        <div className=" bg-gray-800 text-white shadow-xl rounded-2xl px-8 py-2 flex items-center gap-3">
+
+          <button className=" cursor-pointer bg-red-400 border-1 rounded-full p-3.5 duration-300 ease-in-out" onClick={() => setActiveTool("draw")}>
+            
+          </button>
+
+          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out" onClick={() => setActiveTool("draw")}>
             <FaPencilAlt size={20} />
           </button>
 
-          <button onClick={() => setActiveTool("shape")}>
+          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out" onClick={() => setActiveTool("shape")}>
             <FaShapes size={20} />
           </button>
 
-          <button onClick={() => setActiveTool("line")}>
+          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out" onClick={() => setActiveTool("line")}>
             <FaSlash size={20} />
           </button>
 
-          <button onClick={() => setActiveTool("text")}>
+          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out" onClick={() => setActiveTool("text")}>
             <FaFont size={20} />
           </button>
+          
+          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out" onClick={() => setActiveTool("text")}>
+            <FaTh size={20} />
+          </button>
 
-          <button onClick={() => setActiveTool("template")}>
+          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out" onClick={() => setActiveTool("template")}>
             <FaRegClone size={20} />
           </button>
 
           <div className="w-px h-7 bg-gray-300" />
 
-          <button>
+          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out">
             <FaUndo size={20} />
           </button>
 
-          <button>
+          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out">
             <FaRedo size={20} />
           </button>
         </div>
