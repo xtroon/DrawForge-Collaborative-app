@@ -61,6 +61,13 @@ export default function Online() {
         )}
       </div>
 
+     {/* Zoom */}
+      <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg shadow">
+        <button className="text-lg font-semibold">-</button>
+        <span className="w-12 text-center">100%</span>
+        <button className="text-lg font-semibold">+</button>
+      </div>
+
       {/* share btn */}
       <button className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 flex justify-between items-center gap-2 rounded-lg font-medium transition">
         Share

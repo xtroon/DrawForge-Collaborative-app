@@ -1,3 +1,4 @@
+import Canvas from "../../components/canvas/Canva";
 import Online from "../../components/canvas/Online";
 import Toolbar from "../../components/canvas/Toolbar";
 import { MdFullscreen, MdKeyboardBackspace } from "react-icons/md";
@@ -7,7 +8,7 @@ function Workspace() {
     <>
       <div className="min-h-screen bg-gray-50 relative">
         {/* canvas */}
-
+        < Canvas />
 
         
         {/* toolbar  */}
@@ -17,8 +18,8 @@ function Workspace() {
         < Online />
 
         {/* back to dashboard button */}
-        <div className=" fixed top-5 left-5 bg-gray-800 text-white p-1 rounded-full shadow-lg">
-          <button className=" cursor-pointer hover:bg-gray-600 rounded-full p-2 duration-300 ease-in-out" >
+        <div className=" fixed top-5 left-5 hover:bg-gray-600 bg-gray-800 text-white p-1 rounded-full shadow-lg">
+          <button className=" cursor-pointer rounded-full p-2 duration-300 ease-in-out" >
             <MdKeyboardBackspace size={20} />
           </button>
         </div>
