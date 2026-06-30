@@ -1,4 +1,4 @@
-import Canvas from "../../components/canvas/Canva";
+import Canvas from "../../features/Canva";
 import Online from "../../components/canvas/Online";
 import Toolbar from "../../components/canvas/Toolbar";
 import { MdFullscreen, MdKeyboardBackspace } from "react-icons/md";
