@@ -1,4 +1,4 @@
-import type { Point } from "./types.ts";
+import type { Point, Shape } from "./types.ts";
 
 export function pencil(
     ctx: CanvasRenderingContext2D,
@@ -25,17 +25,60 @@ export function rectangle(
 }
 
 export function circle(
-  ctx: CanvasRenderingContext2D,
-  start: Point,
-  end: Point
+    ctx: CanvasRenderingContext2D,
+    start: Point,
+    end: Point
 ) {
-  const width = Math.abs(end.x - start.x);
-  const height = Math.abs(end.y - start.y);
+    const width = Math.abs(end.x - start.x);
+    const height = Math.abs(end.y - start.y);
 
-  const centerX = (start.x + end.x) / 2;
-  const centerY = (start.y + end.y) / 2;
+    const centerX = (start.x + end.x) / 2;
+    const centerY = (start.y + end.y) / 2;
 
-  ctx.beginPath();
-  ctx.ellipse(centerX, centerY, width / 2, height / 2, 0, 0, 2 * Math.PI);
-  ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, width / 2, height / 2, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+}
+
+export function line(
+    ctx: CanvasRenderingContext2D,
+    start: Point,
+    end: Point
+) {
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+}
+
+export function redrawCanvas(
+    ctx: CanvasRenderingContext2D,
+    canvas: HTMLCanvasElement,
+    shapes: Shape[]
+) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (const shape of shapes) {
+        switch (shape.type) {
+            case "rectangle":
+                rectangle(ctx, shape.start, shape.end);
+                break;
+            case "circle":
+                circle(ctx, shape.start, shape.end);
+                break;
+            case "line":
+                line(ctx, shape.start, shape.end);
+                break;
+            case "pencil":
+                if (shape.points && shape.points.length > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(shape.points[0].x, shape.points[0].y);
+                    for (let i = 1; i < shape.points.length; i++) {
+                        ctx.lineTo(shape.points[i].x, shape.points[i].y);
+                    }
+                    ctx.stroke();
+                }
+                break;
+        }
+    }
 }

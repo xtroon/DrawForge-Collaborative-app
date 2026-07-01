@@ -2,20 +2,22 @@ import Canvas from "../../features/Canva";
 import Online from "../../components/canvas/Online";
 import Toolbar from "../../components/canvas/Toolbar";
 import { MdFullscreen, MdKeyboardBackspace } from "react-icons/md";
+import { useState } from "react";
 
 function Workspace() {
+  const [tool, setTool] = useState<"pencil" | "rectangle" | "circle" | "line">("pencil");
+
   return (
     <>
       <div className="min-h-screen bg-gray-50 relative">
         {/* canvas */}
-        < Canvas />
-
+        <Canvas tool={tool} />
         
         {/* toolbar  */}
-        <Toolbar />
+        <Toolbar tool={tool} setTool={setTool} />
 
         {/* current online users  */}
-        < Online />
+        <Online />
 
         {/* back to dashboard button */}
         <div className=" fixed top-5 left-5 hover:bg-gray-600 bg-gray-800 text-white p-1 rounded-full shadow-lg">

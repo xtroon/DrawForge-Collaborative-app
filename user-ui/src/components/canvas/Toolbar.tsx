@@ -1,77 +1,25 @@
 import { useState } from "react";
-import {
-  FaPencilAlt,
-  FaShapes,
-  FaFont,
-  FaSlash,
-  FaUndo,
-  FaRedo,
-  FaRegClone,
-  FaTh,
-} from "react-icons/fa";
+import { FaPencilAlt, FaShapes, FaFont, FaSlash, FaUndo, FaRedo, FaRegClone, FaTh, FaSquare, FaCircle } from "react-icons/fa";
 
+type ToolType = "pencil" | "rectangle" | "circle" | "line";
 
+type ToolbarProps = {
+  tool: ToolType;
+  setTool: (tool: ToolType) => void;
+};
 
-
-export default function Toolbar() {
-  const [activeTool, setActiveTool] = useState<
-    "draw" | "shape" | "line" | "text" | "template"
-  >("draw");
+export default function Toolbar({ tool, setTool }: ToolbarProps) {
+  const [activeMenu, setActiveMenu] = useState<"shape" | null>(null);
 
   const renderOptions = () => {
-    switch (activeTool) {
-      case "draw":
-        return (
-          <div className="flex gap-3">
-            <button>Pencil</button>
-            <button>Brush</button>
-            <button>Marker</button>
-            <input type="color" />
-          </div>
-        );
-
+    switch (activeMenu) {
       case "shape":
         return (
-          <div className="flex gap-3">
-            <button>Rectangle</button>
-            <button>Circle</button>
-            <button>Arrow</button>
-            <button>Line</button>
+          <div className="flex gap-3 text-black">
+            <button onClick={() => setTool("rectangle")} className={`p-2 rounded ${tool === "rectangle" ? "bg-gray-200" : "hover:bg-gray-100"}`}><FaSquare size={20}/></button>
+            <button onClick={() => setTool("circle")} className={`p-2 rounded ${tool === "circle" ? "bg-gray-200" : "hover:bg-gray-100"}`}><FaCircle size={20}/></button>
           </div>
         );
-
-      case "line":
-        return (
-          <div className="flex gap-3">
-            <button>Straight Line</button>
-            <button>Arrow Line</button>
-            <button>Dashed Line</button>
-          </div>
-        );
-
-      case "text":
-        return (
-          <div className="flex gap-3">
-            <button>B</button>
-            <button>I</button>
-            <button>U</button>
-            <input
-              type="number"
-              placeholder="16"
-              className="w-14 text-black border rounded px-1"
-            />
-          </div>
-        );
-
-      case "template":
-        return (
-          <div className="flex gap-3">
-            <button>Flowchart</button>
-            <button>Mind Map</button>
-            <button>Blank</button>
-          </div>
-        );
-
       default:
         return null;
     }
@@ -81,42 +29,49 @@ export default function Toolbar() {
     <>
       <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50">
         {/* Floating Options */}
-        <div className="mb-3 rounded-xl bg-white shadow-lg p-4">
-          {renderOptions()}
-        </div>
+        {activeMenu && (
+          <div className="mb-3 rounded-xl bg-white shadow-lg p-4 flex justify-center">
+            {renderOptions()}
+          </div>
+        )}
 
         {/* Bottom Toolbar */}
         <div className=" bg-gray-800 text-white shadow-xl rounded-2xl px-8 py-2 flex items-center gap-3">
 
-          <button className=" cursor-pointer bg-red-400 border-1 rounded-full p-3.5 duration-300 ease-in-out" onClick={() => setActiveTool("draw")}>
-            
-          </button>
-
-          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out" onClick={() => setActiveTool("draw")}>
+          <button 
+            className={`cursor-pointer rounded-full p-4 duration-300 ease-in-out ${tool === "pencil" ? "bg-gray-600" : "hover:bg-gray-600"}`} 
+            onClick={() => { setTool("pencil"); setActiveMenu(null); }}
+          >
             <FaPencilAlt size={20} />
           </button>
 
-          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out" onClick={() => setActiveTool("shape")}>
+          <button 
+            className={`cursor-pointer rounded-full p-4 duration-300 ease-in-out ${tool === "rectangle" || tool === "circle" ? "bg-gray-600" : "hover:bg-gray-600"}`} 
+            onClick={() => setActiveMenu(activeMenu === "shape" ? null : "shape")}
+          >
             <FaShapes size={20} />
           </button>
 
-          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out" onClick={() => setActiveTool("line")}>
+          <button 
+            className={`cursor-pointer rounded-full p-4 duration-300 ease-in-out ${tool === "line" ? "bg-gray-600" : "hover:bg-gray-600"}`} 
+            onClick={() => { setTool("line"); setActiveMenu(null); }}
+          >
             <FaSlash size={20} />
           </button>
 
-          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out" onClick={() => setActiveTool("text")}>
+          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out">
             <FaFont size={20} />
           </button>
           
-          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out" onClick={() => setActiveTool("text")}>
+          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out">
             <FaTh size={20} />
           </button>
 
-          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out" onClick={() => setActiveTool("template")}>
+          <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out">
             <FaRegClone size={20} />
           </button>
 
-          <div className="w-px h-7 bg-gray-300" />
+          <div className="w-px h-7 bg-gray-500 mx-2" />
 
           <button className=" cursor-pointer hover:bg-gray-600  rounded-full p-4 duration-300 ease-in-out">
             <FaUndo size={20} />
