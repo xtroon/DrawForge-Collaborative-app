@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { pencil, rectangle } from "./draw";
+import { pencil, rectangle, circle } from "./draw";
 
 export default function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -10,7 +10,7 @@ export default function Canvas() {
   const [drawing, setDrawing] = useState(false);
   const [prevPoint, setPrevPoint] = useState({ x: 0, y: 0 });
 
-  const [tool, setTool] = useState<"pencil" | "rectangle">("rectangle");
+  const [tool, setTool] = useState<"pencil" | "rectangle" | "circle">("circle");
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -77,6 +77,16 @@ export default function Canvas() {
       rectangle(ctx, prevPoint, {
         x: offsetX,
         y: offsetY,
+      });
+    }
+
+    if (tool === "circle") {
+      if (snapshotRef.current) {
+        ctx.putImageData(snapshotRef.current, 0 , 0);
+      }
+      circle(ctx, prevPoint,{
+        x: offsetX,
+        y: offsetY
       });
     }
   };
