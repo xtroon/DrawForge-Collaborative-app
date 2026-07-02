@@ -1,6 +1,6 @@
-# Scribbly - Collaborative Whiteboard
+# DrawForge - Collaborative Whiteboard
 
-Scribbly is a lightweight, interactive collaborative whiteboard application built with React and HTML5 Canvas. It allows users to freely express their ideas through various drawing tools and shape creation.
+DrawForge is a lightweight, interactive collaborative whiteboard application built with React and HTML5 Canvas. It allows users to freely express their ideas through various drawing tools and shape creation.
 
 ## 🚀 Features
 
