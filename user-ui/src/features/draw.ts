@@ -51,6 +51,60 @@ export function line(
     ctx.stroke();
 }
 
+export function roundedRectangle(
+    ctx: CanvasRenderingContext2D,
+    start: Point,
+    end: Point
+) {
+    const width = end.x - start.x;
+    const height = end.y - start.y;
+    const radius = 10;
+    ctx.beginPath();
+    ctx.roundRect(start.x, start.y, width, height, radius);
+    ctx.stroke();
+}
+
+export function rhombus(
+    ctx: CanvasRenderingContext2D,
+    start: Point,
+    end: Point
+) {
+    const minX = Math.min(start.x, end.x);
+    const maxX = Math.max(start.x, end.x);
+    const minY = Math.min(start.y, end.y);
+    const maxY = Math.max(start.y, end.y);
+    
+    const midX = (minX + maxX) / 2;
+    const midY = (minY + maxY) / 2;
+
+    ctx.beginPath();
+    ctx.moveTo(midX, minY);
+    ctx.lineTo(maxX, midY);
+    ctx.lineTo(midX, maxY);
+    ctx.lineTo(minX, midY);
+    ctx.closePath();
+    ctx.stroke();
+}
+
+export function arrow(
+    ctx: CanvasRenderingContext2D,
+    start: Point,
+    end: Point
+) {
+    const headlen = 15;
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const angle = Math.atan2(dy, dx);
+
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.lineTo(end.x - headlen * Math.cos(angle - Math.PI / 6), end.y - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(end.x, end.y);
+    ctx.lineTo(end.x - headlen * Math.cos(angle + Math.PI / 6), end.y - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
 export function redrawCanvas(
     ctx: CanvasRenderingContext2D,
     canvas: HTMLCanvasElement,
@@ -68,6 +122,8 @@ export function redrawCanvas(
     ctx.setTransform(scale, 0, 0, scale, pan.x, pan.y);
 
     for (const shape of shapes) {
+        ctx.strokeStyle = shape.color || "black";
+        ctx.lineWidth = shape.strokeWidth || 2;
         switch (shape.type) {
             case "rectangle":
                 rectangle(ctx, shape.start, shape.end);
@@ -78,14 +134,30 @@ export function redrawCanvas(
             case "line":
                 line(ctx, shape.start, shape.end);
                 break;
+            case "rounded-rectangle":
+                roundedRectangle(ctx, shape.start, shape.end);
+                break;
+            case "rhombus":
+                rhombus(ctx, shape.start, shape.end);
+                break;
+            case "arrow":
+                arrow(ctx, shape.start, shape.end);
+                break;
             case "pencil":
+            case "brush":
                 if (shape.points && shape.points.length > 0) {
+                    ctx.save();
+                    if (shape.type === "brush") {
+                        ctx.shadowBlur = shape.strokeWidth * 1.5;
+                        ctx.shadowColor = shape.color;
+                    }
                     ctx.beginPath();
                     ctx.moveTo(shape.points[0].x, shape.points[0].y);
                     for (let i = 1; i < shape.points.length; i++) {
                         ctx.lineTo(shape.points[i].x, shape.points[i].y);
                     }
                     ctx.stroke();
+                    ctx.restore();
                 }
                 break;
         }

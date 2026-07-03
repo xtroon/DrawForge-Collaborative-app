@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { pencil, rectangle, circle, line, redrawCanvas } from "./draw";
+import { pencil, rectangle, circle, line, roundedRectangle, rhombus, arrow, redrawCanvas } from "./draw";
 import type { Shape, Point } from "./types";
 
 type CanvasProps = {
-  tool: "pointer" | "pencil" | "rectangle" | "circle" | "line";
+  tool: "pointer" | "pencil" | "brush" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow";
   zoom: number;
   pan: { x: number; y: number };
   setPan: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
+  color: string;
+  strokeWidth: number;
 };
 
-export default function Canvas({ tool, zoom, pan, setPan }: CanvasProps) {
+export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -64,7 +66,8 @@ export default function Canvas({ tool, zoom, pan, setPan }: CanvasProps) {
     };
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
     if (tool === "pointer") {
       setDragStartPoint({ x: e.clientX, y: e.clientY });
       setDrawing(true);
@@ -78,7 +81,7 @@ export default function Canvas({ tool, zoom, pan, setPan }: CanvasProps) {
     setDrawing(true);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (!drawing) return;
 
     if (tool === "pointer") {
@@ -95,8 +98,14 @@ export default function Canvas({ tool, zoom, pan, setPan }: CanvasProps) {
 
     const { x: worldX, y: worldY } = getWorldCoordinates(e.clientX, e.clientY);
 
-    if (tool === "pencil") {
+    if (tool === "pencil" || tool === "brush") {
       ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = strokeWidth;
+      if (tool === "brush") {
+        ctx.shadowBlur = strokeWidth * 1.5;
+        ctx.shadowColor = color;
+      }
       const scale = zoom / 100;
       ctx.setTransform(scale, 0, 0, scale, pan.x, pan.y);
       pencil(ctx, prevPoint, { x: worldX, y: worldY });
@@ -111,6 +120,8 @@ export default function Canvas({ tool, zoom, pan, setPan }: CanvasProps) {
     redrawCanvas(ctx, canvas, shapes, pan, zoom);
 
     ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = strokeWidth;
     const scale = zoom / 100;
     ctx.setTransform(scale, 0, 0, scale, pan.x, pan.y);
 
@@ -123,11 +134,21 @@ export default function Canvas({ tool, zoom, pan, setPan }: CanvasProps) {
     if (tool === "line") {
       line(ctx, prevPoint, { x: worldX, y: worldY });
     }
+    if (tool === "rounded-rectangle") {
+      roundedRectangle(ctx, prevPoint, { x: worldX, y: worldY });
+    }
+    if (tool === "rhombus") {
+      rhombus(ctx, prevPoint, { x: worldX, y: worldY });
+    }
+    if (tool === "arrow") {
+      arrow(ctx, prevPoint, { x: worldX, y: worldY });
+    }
     
     ctx.restore();
   };
 
-  const handleMouseUp = (e: React.MouseEvent) => {
+  const handlePointerUp = (e: React.PointerEvent) => {
+    e.currentTarget.releasePointerCapture(e.pointerId);
     if (tool === "pointer") {
       setDrawing(false);
       return;
@@ -146,6 +167,8 @@ export default function Canvas({ tool, zoom, pan, setPan }: CanvasProps) {
           type: "rectangle",
           start: prevPoint,
           end: { x: worldX, y: worldY },
+          color,
+          strokeWidth,
         },
       ]);
     }
@@ -157,6 +180,8 @@ export default function Canvas({ tool, zoom, pan, setPan }: CanvasProps) {
           type: "circle",
           start: prevPoint,
           end: { x: worldX, y: worldY },
+          color,
+          strokeWidth,
         },
       ]);
     }
@@ -168,16 +193,33 @@ export default function Canvas({ tool, zoom, pan, setPan }: CanvasProps) {
           type: "line",
           start: prevPoint,
           end: { x: worldX, y: worldY },
+          color,
+          strokeWidth,
         },
       ]);
     }
-    if (tool === "pencil") {
+    if (tool === "rounded-rectangle" || tool === "rhombus" || tool === "arrow") {
       setShapes((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
-          type: "pencil",
+          type: tool,
+          start: prevPoint,
+          end: { x: worldX, y: worldY },
+          color,
+          strokeWidth,
+        },
+      ]);
+    }
+    if (tool === "pencil" || tool === "brush") {
+      setShapes((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          type: tool,
           points: currentPathRef.current,
+          color,
+          strokeWidth,
         },
       ]);
     }
@@ -192,10 +234,10 @@ export default function Canvas({ tool, zoom, pan, setPan }: CanvasProps) {
           ? drawing ? "cursor-grabbing" : "cursor-grab"
           : "cursor-crosshair"
       }`}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     />
   );
 }

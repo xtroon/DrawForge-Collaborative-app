@@ -9,13 +9,22 @@ import {
 import { useState, useRef, useEffect } from "react";
 
 function Workspace() {
-  const [tool, setTool] = useState<"pointer" | "pencil" | "rectangle" | "circle" | "line">(
-    "pointer",
+  const [tool, setTool] = useState<"pointer" | "pencil" | "brush" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow">(
+    "pencil",
   );
+  const [color, setColor] = useState("#000000");
+  const [strokeWidth, setStrokeWidth] = useState(2);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoom, setZoom] = useState(100);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const appRef = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef(zoom);
+  const panRef = useRef(pan);
+
+  useEffect(() => {
+    zoomRef.current = zoom;
+    panRef.current = pan;
+  }, [zoom, pan]);
 
   useEffect(() => {
     const appElement = appRef.current;
@@ -23,19 +32,31 @@ function Workspace() {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault(); // Prevent browser native zoom and scroll
-      if (e.ctrlKey) {
-        setZoom((prevZoom) => {
-          // Adjust the sensitivity for pinch-to-zoom
-          const newZoom = prevZoom - e.deltaY * 0.25;
-          return Math.round(Math.min(Math.max(newZoom, 10), 300));
-        });
-      } else {
-        // Two-finger slide pans the canvas
-        setPan((prevPan) => ({
-          x: prevPan.x - e.deltaX,
-          y: prevPan.y - e.deltaY,
-        }));
-      }
+
+      const currentZoom = zoomRef.current;
+      const currentPan = panRef.current;
+
+      const delta = -e.deltaY * 0.25;
+      const newZoom = Math.round(Math.min(Math.max(currentZoom + delta, 10), 300));
+      
+      if (newZoom === currentZoom) return;
+
+      const scale = currentZoom / 100;
+      const newScale = newZoom / 100;
+
+      const mouseX = e.clientX;
+      const mouseY = e.clientY;
+
+      // Calculate world coordinates under mouse
+      const worldX = (mouseX - currentPan.x) / scale;
+      const worldY = (mouseY - currentPan.y) / scale;
+
+      // Calculate new pan to keep mouse pointing at the same world coordinates
+      const newPanX = mouseX - worldX * newScale;
+      const newPanY = mouseY - worldY * newScale;
+
+      setZoom(newZoom);
+      setPan({ x: newPanX, y: newPanY });
     };
 
     // passive: false is required to allow e.preventDefault()
@@ -59,10 +80,10 @@ function Workspace() {
     <>
       <div ref={appRef} className="min-h-screen bg-gray-50 relative overflow-hidden">
         {/* canvas */}
-        <Canvas tool={tool} zoom={zoom} pan={pan} setPan={setPan} />
+        <Canvas tool={tool} zoom={zoom} pan={pan} setPan={setPan} color={color} strokeWidth={strokeWidth} />
 
         {/* toolbar  */}
-        <Toolbar tool={tool} setTool={setTool} />
+        <Toolbar tool={tool} setTool={setTool} color={color} setColor={setColor} strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth} />
 
         {/* current online users  */}
         <Online zoom={zoom} setZoom={setZoom} />
