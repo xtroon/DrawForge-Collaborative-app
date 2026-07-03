@@ -1,17 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { pencil, rectangle, circle, line, roundedRectangle, rhombus, arrow, redrawCanvas } from "./draw";
+import { isShapeHit } from "./utils";
 import type { Shape, Point } from "./types";
 
 type CanvasProps = {
-  tool: "pointer" | "pencil" | "brush" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow";
+  tool: "pointer" | "pencil" | "brush" | "eraser" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow";
   zoom: number;
   pan: { x: number; y: number };
   setPan: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
   color: string;
   strokeWidth: number;
+  shapes: Shape[];
+  setShapes: React.Dispatch<React.SetStateAction<Shape[]>>;
+  setRedoStack: React.Dispatch<React.SetStateAction<Shape[]>>;
 };
 
-export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: CanvasProps) {
+export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, shapes, setShapes, setRedoStack }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -20,8 +24,13 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: 
   const [drawing, setDrawing] = useState(false);
   const [prevPoint, setPrevPoint] = useState({ x: 0, y: 0 });
   const [dragStartPoint, setDragStartPoint] = useState({ x: 0, y: 0 });
+  
+  const erasedShapesRef = useRef<Set<string>>(new Set());
+  const hasErasedRef = useRef(false);
 
-  const [shapes, setShapes] = useState<Shape[]>([]);
+  const getRenderShapes = () => shapes.map(s => 
+    erasedShapesRef.current.has(s.id) ? { ...s, color: "#e5e7eb" } : s
+  );
 
   useEffect(() => {
     const handleResize = () => {
@@ -39,7 +48,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: 
       ctx.strokeStyle = "black";
       ctxRef.current = ctx;
 
-      redrawCanvas(ctx, canvas, shapes, pan, zoom);
+      redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom);
     };
 
     // Initial setup
@@ -55,7 +64,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: 
 
     if (!ctx || !canvas) return;
 
-    redrawCanvas(ctx, canvas, shapes, pan, zoom);
+    redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom);
   }, [shapes, pan, zoom]);
 
   const getWorldCoordinates = (clientX: number, clientY: number) => {
@@ -79,6 +88,23 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: 
     currentPathRef.current = [{ x: worldX, y: worldY }];
 
     setDrawing(true);
+    
+    if (tool === "eraser") {
+        erasedShapesRef.current.clear();
+        hasErasedRef.current = false;
+        
+        for (let i = shapes.length - 1; i >= 0; i--) {
+            if (isShapeHit(shapes[i], worldX, worldY, 15)) {
+                erasedShapesRef.current.add(shapes[i].id);
+                hasErasedRef.current = true;
+                
+                const ctx = ctxRef.current;
+                const canvas = canvasRef.current;
+                if (ctx && canvas) redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom);
+                break; // erase top-most shape only on down
+            }
+        }
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -97,6 +123,22 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: 
     if (!ctx || !canvas) return;
 
     const { x: worldX, y: worldY } = getWorldCoordinates(e.clientX, e.clientY);
+
+    if (tool === "eraser") {
+        let erasedAny = false;
+        for (let i = shapes.length - 1; i >= 0; i--) {
+            if (!erasedShapesRef.current.has(shapes[i].id) && isShapeHit(shapes[i], worldX, worldY, 15)) {
+                erasedShapesRef.current.add(shapes[i].id);
+                hasErasedRef.current = true;
+                erasedAny = true;
+                break; // erase one shape per tick for better feel, or let it erase multiple
+            }
+        }
+        if (erasedAny) {
+            redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom);
+        }
+        return;
+    }
 
     if (tool === "pencil" || tool === "brush") {
       ctx.save();
@@ -117,7 +159,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: 
     }
 
     // For other shapes, clear and redraw everything, then draw temporary shape
-    redrawCanvas(ctx, canvas, shapes, pan, zoom);
+    redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom);
 
     ctx.save();
     ctx.strokeStyle = color;
@@ -157,6 +199,19 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: 
     // Only save shape if we were actually drawing one
     if (!drawing) return;
 
+    if (tool === "eraser") {
+        if (hasErasedRef.current) {
+            setShapes((prev) => prev.map(s => 
+              erasedShapesRef.current.has(s.id) ? { ...s, color: "#e5e7eb" } as any : s
+            ));
+            setRedoStack([]);
+        }
+        erasedShapesRef.current.clear();
+        hasErasedRef.current = false;
+        setDrawing(false);
+        return;
+    }
+
     const { x: worldX, y: worldY } = getWorldCoordinates(e.clientX, e.clientY);
 
     if (tool === "rectangle") {
@@ -171,6 +226,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: 
           strokeWidth,
         },
       ]);
+      setRedoStack([]);
     }
     if (tool === "circle") {
       setShapes((prev) => [
@@ -184,6 +240,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: 
           strokeWidth,
         },
       ]);
+      setRedoStack([]);
     }
     if (tool === "line") {
       setShapes((prev) => [
@@ -197,6 +254,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: 
           strokeWidth,
         },
       ]);
+      setRedoStack([]);
     }
     if (tool === "rounded-rectangle" || tool === "rhombus" || tool === "arrow") {
       setShapes((prev) => [
@@ -210,6 +268,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: 
           strokeWidth,
         },
       ]);
+      setRedoStack([]);
     }
     if (tool === "pencil" || tool === "brush") {
       setShapes((prev) => [
@@ -222,6 +281,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth }: 
           strokeWidth,
         },
       ]);
+      setRedoStack([]);
     }
     setDrawing(false);
   };

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { FaMousePointer, FaPencilAlt, FaPaintBrush, FaShapes, FaFont, FaSlash, FaUndo, FaRedo, FaRegClone, FaTh, FaSquare, FaCircle, FaLongArrowAltRight } from "react-icons/fa";
+import { FaMousePointer, FaPencilAlt, FaPaintBrush, FaEraser, FaShapes, FaFont, FaSlash, FaUndo, FaRedo, FaRegClone, FaTh, FaSquare, FaCircle, FaLongArrowAltRight } from "react-icons/fa";
 
-type ToolType = "pointer" | "pencil" | "brush" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow";
+type ToolType = "pointer" | "pencil" | "brush" | "eraser" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow";
 
 type ToolbarProps = {
   tool: ToolType;
@@ -10,9 +10,13 @@ type ToolbarProps = {
   setColor: (color: string) => void;
   strokeWidth: number;
   setStrokeWidth: (width: number) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 };
 
-export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth }: ToolbarProps) {
+export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, onUndo, onRedo, canUndo, canRedo }: ToolbarProps) {
   const [activeMenu, setActiveMenu] = useState<"shape" | "color" | "draw" | null>(null);
 
   const colors = [
@@ -102,6 +106,13 @@ export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, s
                 <FaPaintBrush size={16} />
                 <span className="text-[10px]">Brush</span>
               </button>
+              <button 
+                onClick={() => setTool("eraser")} 
+                className={`flex-1 py-2 rounded-lg transition-colors flex flex-col items-center gap-1 ${tool === "eraser" ? "bg-indigo-500/20 text-indigo-400" : "text-gray-300 hover:bg-gray-700 hover:text-white"}`}
+              >
+                <FaEraser size={16} />
+                <span className="text-[10px]">Eraser</span>
+              </button>
             </div>
             <div className="h-px w-full bg-gray-700/80" />
             <div className="flex flex-col gap-2">
@@ -188,17 +199,17 @@ export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, s
           </button>
 
           <button 
-            className={getBtnClass(tool === "pencil" || tool === "brush")} 
+            className={getBtnClass(tool === "pencil" || tool === "brush" || tool === "eraser")} 
             onClick={() => {
               if (activeMenu === "draw") setActiveMenu(null);
               else {
                 setActiveMenu("draw");
-                if (tool !== "pencil" && tool !== "brush") setTool("pencil");
+                if (tool !== "pencil" && tool !== "brush" && tool !== "eraser") setTool("pencil");
               }
             }}
-            title="Draw"
+            title="Draw & Erase"
           >
-            {tool === "brush" ? <FaPaintBrush size={18} /> : <FaPencilAlt size={18} />}
+            {tool === "brush" ? <FaPaintBrush size={18} /> : tool === "eraser" ? <FaEraser size={18} /> : <FaPencilAlt size={18} />}
           </button>
 
           <button 
@@ -233,12 +244,22 @@ export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, s
 
           <div className="w-px h-8 bg-gray-700/80 mx-2" />
 
-          <button className={getBtnClass(false)} title="Undo (Coming Soon)">
-            <FaUndo size={18} />
+          <button 
+            className={getBtnClass(false)} 
+            onClick={onUndo} 
+            disabled={!canUndo} 
+            title="Undo"
+          >
+            <FaUndo size={18} className={!canUndo ? "opacity-30" : ""} />
           </button>
 
-          <button className={getBtnClass(false)} title="Redo (Coming Soon)">
-            <FaRedo size={18} />
+          <button 
+            className={getBtnClass(false)} 
+            onClick={onRedo} 
+            disabled={!canRedo} 
+            title="Redo"
+          >
+            <FaRedo size={18} className={!canRedo ? "opacity-30" : ""} />
           </button>
         </div>
       </div>

@@ -7,9 +7,10 @@ import {
   MdKeyboardBackspace,
 } from "react-icons/md";
 import { useState, useRef, useEffect } from "react";
+import type { Shape } from "../../features/types";
 
 function Workspace() {
-  const [tool, setTool] = useState<"pointer" | "pencil" | "brush" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow">(
+  const [tool, setTool] = useState<"pointer" | "pencil" | "brush" | "eraser" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow">(
     "pencil",
   );
   const [color, setColor] = useState("#000000");
@@ -17,9 +18,27 @@ function Workspace() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoom, setZoom] = useState(100);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  
+  const [shapes, setShapes] = useState<Shape[]>([]);
+  const [redoStack, setRedoStack] = useState<Shape[]>([]);
+
   const appRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(zoom);
   const panRef = useRef(pan);
+
+  const handleUndo = () => {
+    if (shapes.length === 0) return;
+    const lastShape = shapes[shapes.length - 1];
+    setShapes((prev) => prev.slice(0, -1));
+    setRedoStack((prev) => [...prev, lastShape]);
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const shapeToRestore = redoStack[redoStack.length - 1];
+    setRedoStack((prev) => prev.slice(0, -1));
+    setShapes((prev) => [...prev, shapeToRestore]);
+  };
 
   useEffect(() => {
     zoomRef.current = zoom;
@@ -80,10 +99,31 @@ function Workspace() {
     <>
       <div ref={appRef} className="min-h-screen bg-gray-50 relative overflow-hidden">
         {/* canvas */}
-        <Canvas tool={tool} zoom={zoom} pan={pan} setPan={setPan} color={color} strokeWidth={strokeWidth} />
+        <Canvas 
+          tool={tool} 
+          zoom={zoom} 
+          pan={pan} 
+          setPan={setPan} 
+          color={color} 
+          strokeWidth={strokeWidth}
+          shapes={shapes}
+          setShapes={setShapes}
+          setRedoStack={setRedoStack}
+        />
 
         {/* toolbar  */}
-        <Toolbar tool={tool} setTool={setTool} color={color} setColor={setColor} strokeWidth={strokeWidth} setStrokeWidth={setStrokeWidth} />
+        <Toolbar 
+          tool={tool} 
+          setTool={setTool} 
+          color={color} 
+          setColor={setColor} 
+          strokeWidth={strokeWidth} 
+          setStrokeWidth={setStrokeWidth} 
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={shapes.length > 0}
+          canRedo={redoStack.length > 0}
+        />
 
         {/* current online users  */}
         <Online zoom={zoom} setZoom={setZoom} />

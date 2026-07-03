@@ -122,7 +122,9 @@ export function redrawCanvas(
     ctx.setTransform(scale, 0, 0, scale, pan.x, pan.y);
 
     for (const shape of shapes) {
-        ctx.strokeStyle = shape.color || "black";
+        if (shape.type !== "eraser") {
+            ctx.strokeStyle = shape.color || "black";
+        }
         ctx.lineWidth = shape.strokeWidth || 2;
         switch (shape.type) {
             case "rectangle":
@@ -145,9 +147,13 @@ export function redrawCanvas(
                 break;
             case "pencil":
             case "brush":
+            case "eraser":
                 if (shape.points && shape.points.length > 0) {
                     ctx.save();
-                    if (shape.type === "brush") {
+                    if (shape.type === "eraser") {
+                        ctx.globalCompositeOperation = "destination-out";
+                        ctx.strokeStyle = "rgba(0,0,0,1)";
+                    } else if (shape.type === "brush") {
                         ctx.shadowBlur = shape.strokeWidth * 1.5;
                         ctx.shadowColor = shape.color;
                     }

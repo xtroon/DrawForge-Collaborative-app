@@ -19,6 +19,13 @@ export type Brush = {
   strokeWidth: number;
 };
 
+export type Eraser = {
+  id: string;
+  type: "eraser";
+  points: Point[];
+  strokeWidth: number;
+};
+
 export type RoundedRectangle = {
   id: string;
   type: "rounded-rectangle";
@@ -73,4 +80,4 @@ export type Line = {
   strokeWidth: number;
 };
 
-export type Shape = Rectangle | Circle | Line | Pencil | Brush | RoundedRectangle | Rhombus | Arrow;
+export type Shape = Rectangle | Circle | Line | Pencil | Brush | Eraser | RoundedRectangle | Rhombus | Arrow;
