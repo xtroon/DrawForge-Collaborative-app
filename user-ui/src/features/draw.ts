@@ -54,9 +54,18 @@ export function line(
 export function redrawCanvas(
     ctx: CanvasRenderingContext2D,
     canvas: HTMLCanvasElement,
-    shapes: Shape[]
+    shapes: Shape[],
+    pan = { x: 0, y: 0 },
+    zoom = 100
 ) {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+
+    ctx.save();
+    const scale = zoom / 100;
+    ctx.setTransform(scale, 0, 0, scale, pan.x, pan.y);
 
     for (const shape of shapes) {
         switch (shape.type) {
@@ -81,4 +90,6 @@ export function redrawCanvas(
                 break;
         }
     }
+    
+    ctx.restore();
 }

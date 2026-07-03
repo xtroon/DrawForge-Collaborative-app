@@ -14,8 +14,16 @@ const users: User[] = [
   { id: 4, name: "Priya" },
 ];
 
-export default function Online() {
+type OnlineProps = {
+  zoom: number;
+  setZoom: (z: number) => void;
+};
+
+export default function Online({ zoom, setZoom }: OnlineProps) {
   const [showUsers, setShowUsers] = useState(false);
+
+  const handleZoomIn = () => setZoom(Math.min(zoom + 10, 300));
+  const handleZoomOut = () => setZoom(Math.max(zoom - 10, 10));
 
   return (
     <div className="fixed top-5 right-5 bg-gray-800 py-2 px-4 rounded-2xl shadow-xl flex items-center gap-7 z-50">
@@ -63,9 +71,9 @@ export default function Online() {
 
      {/* Zoom */}
       <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg shadow">
-        <button className="text-lg font-semibold">-</button>
-        <span className="w-12 text-center">100%</span>
-        <button className="text-lg font-semibold">+</button>
+        <button onClick={handleZoomOut} className="text-lg font-semibold cursor-pointer px-2 hover:bg-gray-100 rounded">-</button>
+        <span className="w-12 text-center select-none">{zoom}%</span>
+        <button onClick={handleZoomIn} className="text-lg font-semibold cursor-pointer px-2 hover:bg-gray-100 rounded">+</button>
       </div>
 
       {/* share btn */}

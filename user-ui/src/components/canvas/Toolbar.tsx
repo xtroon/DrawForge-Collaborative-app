@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { FaPencilAlt, FaShapes, FaFont, FaSlash, FaUndo, FaRedo, FaRegClone, FaTh, FaSquare, FaCircle } from "react-icons/fa";
+import { FaMousePointer, FaPencilAlt, FaShapes, FaFont, FaSlash, FaUndo, FaRedo, FaRegClone, FaTh, FaSquare, FaCircle } from "react-icons/fa";
 
-type ToolType = "pencil" | "rectangle" | "circle" | "line";
+type ToolType = "pointer" | "pencil" | "rectangle" | "circle" | "line";
 
 type ToolbarProps = {
   tool: ToolType;
@@ -37,6 +37,13 @@ export default function Toolbar({ tool, setTool }: ToolbarProps) {
 
         {/* Bottom Toolbar */}
         <div className=" bg-gray-800 text-white shadow-xl rounded-2xl px-8 py-2 flex items-center gap-3">
+
+          <button 
+            className={`cursor-pointer rounded-full p-4 duration-300 ease-in-out ${tool === "pointer" ? "bg-gray-600" : "hover:bg-gray-600"}`} 
+            onClick={() => { setTool("pointer"); setActiveMenu(null); }}
+          >
+            <FaMousePointer size={20} />
+          </button>
 
           <button 
             className={`cursor-pointer rounded-full p-4 duration-300 ease-in-out ${tool === "pencil" ? "bg-gray-600" : "hover:bg-gray-600"}`} 
