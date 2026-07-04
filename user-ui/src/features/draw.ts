@@ -139,7 +139,7 @@ export function redrawCanvas(
         if (shape.type !== "eraser") {
             ctx.strokeStyle = shape.color || "black";
         }
-        ctx.lineWidth = shape.strokeWidth || 2;
+        ctx.lineWidth = ('strokeWidth' in shape ? shape.strokeWidth : 2) || 2;
         switch (shape.type) {
             case "rectangle":
                 rectangle(ctx, shape.start, shape.end);

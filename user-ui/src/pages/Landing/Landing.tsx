@@ -1,7 +1,7 @@
 import { PenTool, Users, Infinity as InfinityIcon, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
-function Squiggle({ color = "#FF6B6B", className = "" }) {
+function Squiggle({ color = "#FF6B6B", className = "" }: { color?: string; className?: string }) {
   return (
     <svg
       viewBox="0 0 200 20"
@@ -20,7 +20,7 @@ function Squiggle({ color = "#FF6B6B", className = "" }) {
   );
 }
 
-function Pin({ color }) {
+function Pin({ color }: { color: string }) {
   return (
     <span
       className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-[#2B2B2A] shadow-[1px_2px_0_rgba(0,0,0,0.4)]"

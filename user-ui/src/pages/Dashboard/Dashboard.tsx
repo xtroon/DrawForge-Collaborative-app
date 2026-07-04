@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
-function Squiggle({ color = "#FF6B6B", className = "" }) {
+function Squiggle({ color = "#FF6B6B", className = "" }: { color?: string; className?: string }) {
   return (
     <svg viewBox="0 0 200 20" preserveAspectRatio="none" className={className} aria-hidden="true">
       <path
@@ -29,7 +29,7 @@ function Squiggle({ color = "#FF6B6B", className = "" }) {
   );
 }
 
-function Pin({ color }) {
+function Pin({ color }: { color: string }) {
   return (
     <span
       className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-[#2B2B2A] shadow-[1px_2px_0_rgba(0,0,0,0.4)]"
@@ -55,7 +55,7 @@ const PROJECTS = [
   { id: 6, name: "Untitled Board", color: "#4FC1CF", edited: "2 weeks ago", collaborators: 1, pattern: "dots" },
 ];
 
-function ThumbnailPattern({ pattern, color }) {
+function ThumbnailPattern({ pattern, color }: { pattern: string; color: string }) {
   if (pattern === "grid") {
     return (
       <svg viewBox="0 0 200 110" className="w-full h-full">
@@ -93,7 +93,7 @@ function ThumbnailPattern({ pattern, color }) {
   );
 }
 
-function Avatar({ i }) {
+function Avatar({ i }: { i: number }) {
   const colors = ["#FF6B6B", "#4FC1CF", "#FFC53D", "#9B7EDE"];
   return (
     <div

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { FaMousePointer, FaPencilAlt, FaPaintBrush, FaEraser, FaShapes, FaFont, FaSlash, FaUndo, FaRedo, FaRegClone, FaTh, FaSquare, FaCircle, FaLongArrowAltRight } from "react-icons/fa";
+import { FaMousePointer, FaPencilAlt, FaPaintBrush, FaEraser, FaShapes, FaFont, FaSlash, FaUndo, FaRedo, FaRegClone, FaTh, FaLongArrowAltRight } from "react-icons/fa";
 
 type ToolType = "pointer" | "pencil" | "brush" | "eraser" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow" | "text";
 

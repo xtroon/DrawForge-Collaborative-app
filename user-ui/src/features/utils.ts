@@ -1,4 +1,4 @@
-import type { Shape, Point } from "./types";
+import type { Shape } from "./types";
 
 function distanceToLineSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
     const l2 = (x1 - x2) ** 2 + (y1 - y2) ** 2;
@@ -22,6 +22,21 @@ export function isShapeHit(shape: Shape, x: number, y: number, threshold: number
 
     if (shape.type === "line") {
         return distanceToLineSegment(x, y, shape.start.x, shape.start.y, shape.end.x, shape.end.y) <= threshold;
+    }
+
+    if (shape.type === "eraser") {
+        for (let i = 1; i < shape.points.length; i++) {
+            const p1 = shape.points[i - 1];
+            const p2 = shape.points[i];
+            if (distanceToLineSegment(x, y, p1.x, p1.y, p2.x, p2.y) <= threshold) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    if (shape.type === "text") {
+        return false;
     }
 
     // For other shapes, we'll approximate using bounding box edges or the actual shape edges
