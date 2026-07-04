@@ -4,7 +4,7 @@ import { isShapeHit } from "./utils";
 import type { Shape, Point } from "./types";
 
 type CanvasProps = {
-  tool: "pointer" | "pencil" | "brush" | "eraser" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow";
+  tool: "pointer" | "pencil" | "brush" | "eraser" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow" | "text";
   zoom: number;
   pan: { x: number; y: number };
   setPan: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
@@ -91,7 +91,13 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
     setDrawing(true);
     
     if (tool === "text") {
-      setTextInput({ x: e.clientX, y: e.clientY, worldX, worldY });
+      e.currentTarget.releasePointerCapture(e.pointerId);
+      
+      // If there's an active text input, clicking canvas will blur it. 
+      // We wrap the new state update in setTimeout so the blur event (which sets to null) runs first.
+      setTimeout(() => {
+        setTextInput({ x: e.clientX, y: e.clientY, worldX, worldY });
+      }, 10);
       setDrawing(false);
       return;
     }
@@ -310,19 +316,21 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
       {textInput && (
         <textarea
           autoFocus
-          className="absolute bg-transparent border border-blue-400 outline-none p-1 resize-none overflow-hidden whitespace-pre"
+          className="absolute bg-transparent border border-blue-400 outline-none p-1 resize-none overflow-hidden whitespace-pre z-50"
           style={{
             left: textInput.x,
             top: textInput.y,
             color: color,
             fontSize: `${24 * (zoom / 100)}px`,
             fontFamily: 'sans-serif',
-            lineHeight: 1.2
+            lineHeight: 1.2,
+            minWidth: '50px',
+            minHeight: `${24 * (zoom / 100) * 1.5}px`
           }}
           onBlur={(e) => {
             if (e.target.value.trim()) {
               setShapes(prev => [...prev, {
-                id: crypto.randomUUID(),
+                id: Math.random().toString(36).substr(2, 9),
                 type: 'text',
                 position: { x: textInput.worldX, y: textInput.worldY },
                 text: e.target.value,

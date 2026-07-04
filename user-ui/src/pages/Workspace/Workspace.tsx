@@ -10,7 +10,7 @@ import { useState, useRef, useEffect } from "react";
 import type { Shape } from "../../features/types";
 
 function Workspace() {
-  const [tool, setTool] = useState<"pointer" | "pencil" | "brush" | "eraser" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow">(
+  const [tool, setTool] = useState<"pointer" | "pencil" | "brush" | "eraser" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow" | "text">(
     "pencil",
   );
   const [color, setColor] = useState("#000000");
