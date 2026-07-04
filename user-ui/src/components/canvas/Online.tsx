@@ -26,7 +26,7 @@ export default function Online({ zoom, setZoom }: OnlineProps) {
   const handleZoomOut = () => setZoom(Math.max(zoom - 10, 10));
 
   return (
-    <div className="fixed top-5 right-5 bg-gray-800 py-2 px-4 rounded-2xl shadow-xl flex items-center gap-7 z-50">
+    <div className="fixed top-6 right-6 bg-white border-2 border-[#2B2B2A] shadow-[6px_6px_0_#9B7EDE] py-2 px-4 doodle-card flex items-center gap-7 z-50">
       {/* users */}
       <div className="relative">
         <div
@@ -36,16 +36,17 @@ export default function Online({ zoom, setZoom }: OnlineProps) {
           {users.slice(0, 3).map((user, index) => (
             <div
               key={user.id}
-              className={`w-10 h-10 rounded-full bg-blue-500 border-2 border-white text-white flex items-center justify-center font-semibold ${
+              className={`w-10 h-10 rounded-full border-2 border-[#2B2B2A] text-[#2B2B2A] flex items-center justify-center font-doodle font-bold text-xl ${
                 index !== 0 ? "-ml-3" : ""
               }`}
+              style={{ backgroundColor: ['#FF6B6B', '#4FC1CF', '#FFC53D', '#9B7EDE'][index % 4] }}
             >
               {user.name[0]}
             </div>
           ))}
 
           {users.length > 3 && (
-            <div className="-ml-3 w-10 h-10 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-sm">
+            <div className="-ml-3 w-10 h-10 rounded-full bg-[#E5E1D8] border-2 border-[#2B2B2A] flex items-center justify-center font-doodle font-bold text-lg text-[#2B2B2A]">
               +{users.length - 3}
             </div>
           )}
@@ -53,31 +54,34 @@ export default function Online({ zoom, setZoom }: OnlineProps) {
 
         {/* popup */}
         {showUsers && (
-          <div className="absolute right-0 mt-3 w-52 bg-white rounded-lg shadow-xl p-3">
-            <p className="font-semibold mb-2 text-gray-700">Online Users</p>
+          <div className="absolute right-0 mt-3 w-52 bg-white border-2 border-[#2B2B2A] shadow-[4px_4px_0_#FF6B6B] p-3 doodle-card wobble-2">
+            <p className="font-doodle font-bold text-2xl mb-2 text-[#2B2B2A] border-b-2 border-dashed border-[#2B2B2A]/30 pb-2">Online Users</p>
 
-            {users.map((user) => (
+            {users.map((user, index) => (
               <div key={user.id} className="flex items-center gap-3 py-2">
-                <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center">
+                <div 
+                  className="w-8 h-8 rounded-full border-2 border-[#2B2B2A] text-[#2B2B2A] flex items-center justify-center font-doodle font-bold text-lg"
+                  style={{ backgroundColor: ['#FF6B6B', '#4FC1CF', '#FFC53D', '#9B7EDE'][index % 4] }}
+                >
                   {user.name[0]}
                 </div>
 
-                <span className="text-gray-700">{user.name}</span>
+                <span className="font-bold text-[#2B2B2A] text-lg">{user.name}</span>
               </div>
             ))}
           </div>
         )}
       </div>
 
-     {/* Zoom */}
-      <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg shadow">
-        <button onClick={handleZoomOut} className="text-lg font-semibold cursor-pointer px-2 hover:bg-gray-100 rounded">-</button>
-        <span className="w-12 text-center select-none">{zoom}%</span>
-        <button onClick={handleZoomIn} className="text-lg font-semibold cursor-pointer px-2 hover:bg-gray-100 rounded">+</button>
+      {/* Zoom */}
+      <div className="flex items-center gap-2 bg-[#FFFDF6] border-2 border-[#2B2B2A] px-2 py-1 doodle-input">
+        <button onClick={handleZoomOut} className="text-2xl font-bold cursor-pointer px-2 hover:bg-[#2B2B2A]/5 text-[#2B2B2A] rounded leading-none pb-1">-</button>
+        <span className="w-12 text-center select-none font-bold text-[#2B2B2A]">{zoom}%</span>
+        <button onClick={handleZoomIn} className="text-2xl font-bold cursor-pointer px-2 hover:bg-[#2B2B2A]/5 text-[#2B2B2A] rounded leading-none pb-1">+</button>
       </div>
 
       {/* share btn */}
-      <button className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 flex justify-between items-center gap-2 rounded-lg font-medium transition">
+      <button className="cursor-pointer doodle-btn bg-[#9B7EDE] text-[#2B2B2A] border-2 border-[#2B2B2A] px-5 py-2 flex justify-between items-center gap-2 font-doodle font-bold text-2xl shadow-[3px_3px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_#2B2B2A] transition-all">
         Share
         <FiShare size={20}/>
       </button>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { PenTool, Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react";
 
 function Squiggle({ color = "#FF6B6B", className = "" }) {
@@ -58,6 +59,7 @@ function DoodleInput({ icon: Icon, label, type = "text", placeholder, showToggle
 }
 
 export default function AuthPage() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState("login"); // "login" | "signup"
   const [showPw, setShowPw] = useState(false);
   const isLogin = mode === "login";
@@ -151,7 +153,10 @@ export default function AuthPage() {
             {isLogin ? "Your board is right where you left it." : "Your first infinite whiteboard is 30 seconds away."}
           </p>
 
-          <form onSubmit={(e) => e.preventDefault()}>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            navigate("/dashboard");
+          }}>
             {!isLogin && (
               <DoodleInput icon={User} label="Name" placeholder="What should we call you?" />
             )}

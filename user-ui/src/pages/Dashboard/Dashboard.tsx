@@ -13,6 +13,7 @@ import {
   MoreHorizontal,
   Grid3x3,
 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
 function Squiggle({ color = "#FF6B6B", className = "" }) {
   return (
@@ -107,6 +108,7 @@ function Avatar({ i }) {
 export default function Dashboard() {
   const [active, setActive] = useState("boards");
   const [roomCode, setRoomCode] = useState("");
+  const navigate = useNavigate();
 
   return (
     <div
@@ -133,7 +135,7 @@ export default function Dashboard() {
       <div className="flex">
         {/* Sidebar */}
         <aside className="hidden md:flex flex-col w-64 shrink-0 min-h-screen border-r-2 border-[#2B2B2A]/10 px-6 py-8">
-          <div className="flex items-center gap-3 mb-10 cursor-pointer">
+          <Link to="/" className="flex items-center gap-3 mb-10 cursor-pointer">
             <div className="relative w-10 h-10 flex items-center justify-center">
               <svg viewBox="0 0 44 44" className="absolute inset-0">
                 <circle cx="22" cy="22" r="19" fill="none" stroke="#FF6B6B" strokeWidth="3" strokeDasharray="3 5" />
@@ -141,12 +143,12 @@ export default function Dashboard() {
               <PenTool className="text-[#2B2B2A] relative" size={18} />
             </div>
             <span className="font-doodle text-2xl font-bold tracking-tight">DrawForge</span>
-          </div>
+          </Link>
 
-          <button className="doodle-btn w-full flex items-center justify-center gap-2 bg-[#FF6B6B] text-[#2B2B2A] py-3 border-2 border-[#2B2B2A] font-doodle font-bold text-xl shadow-[3px_3px_0_#2B2B2A] hover:shadow-[1px_1px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] transition-all mb-8">
+          <Link to="/board/new" className="doodle-btn w-full flex items-center justify-center gap-2 bg-[#FF6B6B] text-[#2B2B2A] py-3 border-2 border-[#2B2B2A] font-doodle font-bold text-xl shadow-[3px_3px_0_#2B2B2A] hover:shadow-[1px_1px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] transition-all mb-8">
             <Plus size={20} />
             New board
-          </button>
+          </Link>
 
           <nav className="flex flex-col gap-1 mb-8">
             {NAV_ITEMS.map((item) => {
@@ -206,13 +208,13 @@ export default function Dashboard() {
 
           {/* Quick actions */}
           <div className="grid sm:grid-cols-3 gap-6 mb-12">
-            <button className="relative doodle-card wobble-1 bg-white border-2 border-[#2B2B2A] shadow-[5px_5px_0_#FF6B6B] p-6 text-left hover:-translate-y-0.5 transition-transform">
+            <Link to="/board/new" className="relative doodle-card wobble-1 bg-white border-2 border-[#2B2B2A] shadow-[5px_5px_0_#FF6B6B] p-6 text-left hover:-translate-y-0.5 transition-transform block">
               <div className="w-12 h-12 rounded-full bg-[#FF6B6B]/20 border-2 border-[#2B2B2A] flex items-center justify-center mb-4">
                 <Plus size={22} />
               </div>
               <h3 className="font-doodle text-2xl font-bold mb-1">Blank board</h3>
               <p className="text-[#5b5b58]">Start from a fresh canvas.</p>
-            </button>
+            </Link>
 
             <button className="relative doodle-card wobble-2 bg-white border-2 border-[#2B2B2A] shadow-[5px_5px_0_#4FC1CF] p-6 text-left hover:-translate-y-0.5 transition-transform">
               <div className="w-12 h-12 rounded-full bg-[#4FC1CF]/20 border-2 border-[#2B2B2A] flex items-center justify-center mb-4">
@@ -248,18 +250,26 @@ export default function Dashboard() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-                <button className="doodle-btn flex items-center justify-center gap-2 bg-[#9B7EDE] text-[#2B2B2A] px-6 py-3 border-2 border-[#2B2B2A] font-doodle font-bold text-xl shadow-[3px_3px_0_#2B2B2A] hover:shadow-[1px_1px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
+                <Link to="/board/new" className="doodle-btn flex items-center justify-center gap-2 bg-[#9B7EDE] text-[#2B2B2A] px-6 py-3 border-2 border-[#2B2B2A] font-doodle font-bold text-xl shadow-[3px_3px_0_#2B2B2A] hover:shadow-[1px_1px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
                   <Plus size={18} />
                   Create room
-                </button>
+                </Link>
                 <div className="flex border-2 border-[#2B2B2A] doodle-input bg-white overflow-hidden">
                   <input
                     value={roomCode}
                     onChange={(e) => setRoomCode(e.target.value)}
                     placeholder="Enter code"
                     className="w-32 px-4 py-3 text-lg outline-none placeholder:text-[#b5b2a8] bg-transparent"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && roomCode.trim()) {
+                        navigate(`/board/${roomCode.trim()}`);
+                      }
+                    }}
                   />
-                  <button className="px-4 font-doodle font-bold text-lg text-[#2B2B2A] hover:text-[#9B7EDE] shrink-0">
+                  <button 
+                    onClick={() => roomCode.trim() && navigate(`/board/${roomCode.trim()}`)}
+                    className="px-4 font-doodle font-bold text-lg text-[#2B2B2A] hover:text-[#9B7EDE] shrink-0"
+                  >
                     Join
                   </button>
                 </div>
@@ -277,9 +287,10 @@ export default function Dashboard() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {PROJECTS.map((p) => (
-              <div
+              <Link
                 key={p.id}
-                className="group bg-white border-2 border-[#2B2B2A] doodle-card p-4 hover:-translate-y-1 hover:shadow-[5px_5px_0_#2B2B2A] transition-all cursor-pointer"
+                to={`/board/${p.id}`}
+                className="group bg-white border-2 border-[#2B2B2A] doodle-card p-4 hover:-translate-y-1 hover:shadow-[5px_5px_0_#2B2B2A] transition-all cursor-pointer block"
               >
                 <div className="doodle-thumb overflow-hidden border-2 border-[#2B2B2A] mb-4 h-28">
                   <ThumbnailPattern pattern={p.pattern} color={p.color} />
@@ -299,7 +310,7 @@ export default function Dashboard() {
                     <span className="text-sm text-[#8a8a86] ml-2">+{p.collaborators - 4}</span>
                   )}
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </main>

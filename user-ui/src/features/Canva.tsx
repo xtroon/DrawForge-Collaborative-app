@@ -30,7 +30,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
   const hasErasedRef = useRef(false);
 
   const getRenderShapes = () => shapes.map(s => 
-    erasedShapesRef.current.has(s.id) ? { ...s, color: "#e5e7eb" } : s
+    erasedShapesRef.current.has(s.id) ? { ...s, color: "#FFFDF6" } : s
   );
 
   useEffect(() => {
@@ -215,7 +215,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
     if (tool === "eraser") {
         if (hasErasedRef.current) {
             setShapes((prev) => prev.map(s => 
-              erasedShapesRef.current.has(s.id) ? { ...s, color: "#e5e7eb" } as any : s
+              erasedShapesRef.current.has(s.id) ? { ...s, color: "#FFFDF6" } as any : s
             ));
             setRedoStack([]);
         }

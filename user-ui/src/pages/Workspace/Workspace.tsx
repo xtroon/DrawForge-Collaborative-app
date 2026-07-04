@@ -6,6 +6,7 @@ import {
   MdFullscreenExit,
   MdKeyboardBackspace,
 } from "react-icons/md";
+import { Link } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import type { Shape } from "../../features/types";
 
@@ -100,13 +101,20 @@ function Workspace() {
     <>
       <div 
         ref={appRef} 
-        className="min-h-screen bg-gray-50 relative overflow-hidden"
+        className="min-h-screen relative overflow-hidden text-[#2B2B2A] selection:bg-[#FFC53D]/50"
         style={{
-          backgroundImage: showGrid ? `radial-gradient(circle, #d1d5db 1.5px, transparent 1.5px)` : 'none',
-          backgroundSize: `${20 * (zoom / 100)}px ${20 * (zoom / 100)}px`,
+          fontFamily: "'Patrick Hand', cursive",
+          backgroundColor: "#FFFDF6",
+          backgroundImage: showGrid ? `radial-gradient(circle, #E5E1D8 1.5px, transparent 1.5px)` : 'none',
+          backgroundSize: `${22 * (zoom / 100)}px ${22 * (zoom / 100)}px`,
           backgroundPosition: `${pan.x}px ${pan.y}px`
         }}
       >
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&display=swap');
+          .font-doodle { font-family: 'Caveat', cursive; }
+          .doodle-btn { border-radius: 200px 15px 190px 15px / 15px 190px 15px 200px; }
+        `}</style>
         {/* canvas */}
         <Canvas 
           tool={tool} 
@@ -140,25 +148,24 @@ function Workspace() {
         <Online zoom={zoom} setZoom={setZoom} />
 
         {/* back to dashboard button */}
-        <div className=" fixed top-5 left-5 hover:bg-gray-600 bg-gray-800 text-white p-1 rounded-full shadow-lg">
-          <button className=" cursor-pointer rounded-full p-2 duration-300 ease-in-out">
-            <MdKeyboardBackspace size={20} />
-          </button>
-        </div>
+        <Link 
+          to="/dashboard"
+          className="fixed top-6 left-6 doodle-btn border-2 border-[#2B2B2A] bg-white text-[#2B2B2A] p-2 hover:bg-[#FFC53D] transition-colors shadow-[3px_3px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_#2B2B2A] z-50 flex items-center justify-center"
+        >
+          <MdKeyboardBackspace size={24} />
+        </Link>
 
         {/* full screen button */}
-        <div className=" fixed bottom-5 right-5 bg-gray-800 text-white p-1 rounded-full shadow-lg">
-          <button
-            onClick={toggleFullscreen}
-            className=" cursor-pointer hover:bg-gray-600 rounded-full p-2 duration-300 ease-in-out"
-          >
-            {isFullscreen ? (
-              <MdFullscreenExit size={20} />
-            ) : (
-              <MdFullscreen size={20} />
-            )}
-          </button>
-        </div>
+        <button
+          onClick={toggleFullscreen}
+          className="fixed bottom-6 right-6 doodle-btn border-2 border-[#2B2B2A] bg-white text-[#2B2B2A] p-2 hover:bg-[#4FC1CF] transition-colors shadow-[3px_3px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_#2B2B2A] z-50 flex items-center justify-center"
+        >
+          {isFullscreen ? (
+            <MdFullscreenExit size={24} />
+          ) : (
+            <MdFullscreen size={24} />
+          )}
+        </button>
       </div>
     </>
   );

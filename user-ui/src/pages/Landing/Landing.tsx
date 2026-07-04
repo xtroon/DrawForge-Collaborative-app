@@ -1,4 +1,5 @@
 import { PenTool, Users, Infinity as InfinityIcon, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 function Squiggle({ color = "#FF6B6B", className = "" }) {
   return (
@@ -75,12 +76,12 @@ export default function Landing() {
             <a href="#how-to-use" className="hover:text-[#FF6B6B] transition-colors">How to Use</a>
           </nav>
           <div className="flex items-center gap-4">
-            <button className="text-lg hover:text-[#FF6B6B] transition-colors">
+            <Link to="/auth" className="text-lg hover:text-[#FF6B6B] transition-colors">
               Log in
-            </button>
-            <button className="doodle-btn text-lg font-bold bg-[#2B2B2A] text-[#FFFDF6] px-5 py-2 border-2 border-[#2B2B2A] shadow-[3px_3px_0_#FF6B6B] hover:shadow-[1px_1px_0_#FF6B6B] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
+            </Link>
+            <Link to="/auth" className="doodle-btn text-lg font-bold bg-[#2B2B2A] text-[#FFFDF6] px-5 py-2 border-2 border-[#2B2B2A] shadow-[3px_3px_0_#FF6B6B] hover:shadow-[1px_1px_0_#FF6B6B] hover:translate-x-[2px] hover:translate-y-[2px] transition-all inline-block">
               Sign up free
-            </button>
+            </Link>
           </div>
         </div>
       </header>
@@ -101,13 +102,13 @@ export default function Landing() {
               and drawing together in real time. Grab a marker &mdash; no rules, just ideas.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-              <button className="doodle-btn flex items-center gap-2 bg-[#FF6B6B] text-[#2B2B2A] px-8 py-4 border-2 border-[#2B2B2A] font-doodle font-bold text-2xl shadow-[4px_4px_0_#2B2B2A] hover:shadow-[2px_2px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
+              <Link to="/board/demo" className="doodle-btn flex items-center gap-2 bg-[#FF6B6B] text-[#2B2B2A] px-8 py-4 border-2 border-[#2B2B2A] font-doodle font-bold text-2xl shadow-[4px_4px_0_#2B2B2A] hover:shadow-[2px_2px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
                 Start drawing now
                 <ArrowRight size={20} />
-              </button>
-              <button className="doodle-btn px-8 py-4 border-2 border-dashed border-[#2B2B2A] font-doodle font-bold text-2xl hover:bg-[#2B2B2A]/5 transition-colors">
+              </Link>
+              <Link to="/board/demo" className="doodle-btn px-8 py-4 border-2 border-dashed border-[#2B2B2A] font-doodle font-bold text-2xl hover:bg-[#2B2B2A]/5 transition-colors">
                 View live demo
-              </button>
+              </Link>
             </div>
           </div>
         </section>
