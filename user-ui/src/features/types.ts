@@ -80,4 +80,13 @@ export type Line = {
   strokeWidth: number;
 };
 
-export type Shape = Rectangle | Circle | Line | Pencil | Brush | Eraser | RoundedRectangle | Rhombus | Arrow;
+export type TextShape = {
+  id: string;
+  type: "text";
+  position: Point;
+  text: string;
+  color: string;
+  fontSize: number;
+};
+
+export type Shape = Rectangle | Circle | Line | Pencil | Brush | Eraser | RoundedRectangle | Rhombus | Arrow | TextShape;

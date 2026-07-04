@@ -18,6 +18,7 @@ function Workspace() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoom, setZoom] = useState(100);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [showGrid, setShowGrid] = useState(false);
   
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [redoStack, setRedoStack] = useState<Shape[]>([]);
@@ -97,7 +98,15 @@ function Workspace() {
 
   return (
     <>
-      <div ref={appRef} className="min-h-screen bg-gray-50 relative overflow-hidden">
+      <div 
+        ref={appRef} 
+        className="min-h-screen bg-gray-50 relative overflow-hidden"
+        style={{
+          backgroundImage: showGrid ? `radial-gradient(circle, #d1d5db 1.5px, transparent 1.5px)` : 'none',
+          backgroundSize: `${20 * (zoom / 100)}px ${20 * (zoom / 100)}px`,
+          backgroundPosition: `${pan.x}px ${pan.y}px`
+        }}
+      >
         {/* canvas */}
         <Canvas 
           tool={tool} 
@@ -123,6 +132,8 @@ function Workspace() {
           onRedo={handleRedo}
           canUndo={shapes.length > 0}
           canRedo={redoStack.length > 0}
+          showGrid={showGrid}
+          setShowGrid={setShowGrid}
         />
 
         {/* current online users  */}

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FaMousePointer, FaPencilAlt, FaPaintBrush, FaEraser, FaShapes, FaFont, FaSlash, FaUndo, FaRedo, FaRegClone, FaTh, FaSquare, FaCircle, FaLongArrowAltRight } from "react-icons/fa";
 
-type ToolType = "pointer" | "pencil" | "brush" | "eraser" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow";
+type ToolType = "pointer" | "pencil" | "brush" | "eraser" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow" | "text";
 
 type ToolbarProps = {
   tool: ToolType;
@@ -14,10 +14,25 @@ type ToolbarProps = {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  showGrid: boolean;
+  setShowGrid: (show: boolean) => void;
 };
 
-export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, onUndo, onRedo, canUndo, canRedo }: ToolbarProps) {
+export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, onUndo, onRedo, canUndo, canRedo, showGrid, setShowGrid }: ToolbarProps) {
   const [activeMenu, setActiveMenu] = useState<"shape" | "color" | "draw" | null>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (toolbarRef.current && !toolbarRef.current.contains(event.target as Node)) {
+        setActiveMenu(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const colors = [
     "#ffffff",
@@ -106,13 +121,6 @@ export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, s
                 <FaPaintBrush size={16} />
                 <span className="text-[10px]">Brush</span>
               </button>
-              <button 
-                onClick={() => setTool("eraser")} 
-                className={`flex-1 py-2 rounded-lg transition-colors flex flex-col items-center gap-1 ${tool === "eraser" ? "bg-indigo-500/20 text-indigo-400" : "text-gray-300 hover:bg-gray-700 hover:text-white"}`}
-              >
-                <FaEraser size={16} />
-                <span className="text-[10px]">Eraser</span>
-              </button>
             </div>
             <div className="h-px w-full bg-gray-700/80" />
             <div className="flex flex-col gap-2">
@@ -171,7 +179,7 @@ export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, s
 
   return (
     <>
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
+      <div ref={toolbarRef} className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
         {/* Floating Options Menu */}
         {activeMenu && (
           <div className="mb-4 rounded-2xl bg-gray-900/85 backdrop-blur-xl border border-gray-700/50 shadow-2xl shadow-black/40 p-2 flex justify-center animate-in fade-in slide-in-from-bottom-2 duration-200">
@@ -199,19 +207,31 @@ export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, s
           </button>
 
           <button 
-            className={getBtnClass(tool === "pencil" || tool === "brush" || tool === "eraser")} 
+            className={getBtnClass(tool === "pencil" || tool === "brush")} 
             onClick={() => {
               if (activeMenu === "draw") setActiveMenu(null);
               else {
                 setActiveMenu("draw");
-                if (tool !== "pencil" && tool !== "brush" && tool !== "eraser") setTool("pencil");
+                if (tool !== "pencil" && tool !== "brush") setTool("pencil");
               }
             }}
             title="Draw & Erase"
           >
-            {tool === "brush" ? <FaPaintBrush size={18} /> : tool === "eraser" ? <FaEraser size={18} /> : <FaPencilAlt size={18} />}
+            {tool === "brush" ? <FaPaintBrush size={18} /> :<FaPencilAlt size={18} />}
           </button>
 
+          <button 
+            className={getBtnClass(tool === "eraser")} 
+            onClick={() => {
+              setActiveMenu(null);
+              setTool("eraser");
+            }}
+            title="Erase"
+          >
+            {<FaEraser size={18} />}
+          </button>
+
+         
           <button 
             className={getBtnClass(tool === "rectangle" || tool === "circle" || tool === "rounded-rectangle" || tool === "rhombus" || tool === "arrow" || tool === "line")} 
             onClick={() => {
@@ -230,11 +250,11 @@ export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, s
 
           <div className="w-px h-8 bg-gray-700/80 mx-2" />
 
-          <button className={getBtnClass(false)} title="Text (Coming Soon)">
+          <button className={getBtnClass(tool === "text")} title="Text" onClick={() => { setTool("text"); setActiveMenu(null); }}>
             <FaFont size={18} />
           </button>
           
-          <button className={getBtnClass(false)} title="Grid (Coming Soon)">
+          <button className={getBtnClass(showGrid)} title="Toggle Grid" onClick={() => setShowGrid(!showGrid)}>
             <FaTh size={18} />
           </button>
 

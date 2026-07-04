@@ -24,6 +24,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
   const [drawing, setDrawing] = useState(false);
   const [prevPoint, setPrevPoint] = useState({ x: 0, y: 0 });
   const [dragStartPoint, setDragStartPoint] = useState({ x: 0, y: 0 });
+  const [textInput, setTextInput] = useState<{ x: number, y: number, worldX: number, worldY: number } | null>(null);
   
   const erasedShapesRef = useRef<Set<string>>(new Set());
   const hasErasedRef = useRef(false);
@@ -89,6 +90,12 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
 
     setDrawing(true);
     
+    if (tool === "text") {
+      setTextInput({ x: e.clientX, y: e.clientY, worldX, worldY });
+      setDrawing(false);
+      return;
+    }
+
     if (tool === "eraser") {
         erasedShapesRef.current.clear();
         hasErasedRef.current = false;
@@ -287,9 +294,10 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
   };
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={`absolute inset-0 bg-gray-200 ${
+    <>
+      <canvas
+        ref={canvasRef}
+        className={`absolute inset-0 bg-transparent ${
         tool === "pointer"
           ? drawing ? "cursor-grabbing" : "cursor-grab"
           : "cursor-crosshair"
@@ -298,6 +306,42 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-    />
+      />
+      {textInput && (
+        <textarea
+          autoFocus
+          className="absolute bg-transparent border border-blue-400 outline-none p-1 resize-none overflow-hidden whitespace-pre"
+          style={{
+            left: textInput.x,
+            top: textInput.y,
+            color: color,
+            fontSize: `${24 * (zoom / 100)}px`,
+            fontFamily: 'sans-serif',
+            lineHeight: 1.2
+          }}
+          onBlur={(e) => {
+            if (e.target.value.trim()) {
+              setShapes(prev => [...prev, {
+                id: crypto.randomUUID(),
+                type: 'text',
+                position: { x: textInput.worldX, y: textInput.worldY },
+                text: e.target.value,
+                color,
+                fontSize: 24,
+                strokeWidth: 0
+              } as any]);
+            }
+            setTextInput(null);
+          }}
+          onInput={(e) => {
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = 'auto';
+            target.style.height = target.scrollHeight + 'px';
+            target.style.width = 'auto';
+            target.style.width = target.scrollWidth + 'px';
+          }}
+        />
+      )}
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import type { Point, Shape } from "./types.ts";
+import type { Point, Shape, TextShape } from "./types.ts";
 
 export function pencil(
     ctx: CanvasRenderingContext2D,
@@ -105,6 +105,20 @@ export function arrow(
     ctx.stroke();
 }
 
+export function text(
+    ctx: CanvasRenderingContext2D,
+    shape: TextShape
+) {
+    ctx.font = `${shape.fontSize}px sans-serif`;
+    ctx.fillStyle = shape.color;
+    ctx.textBaseline = "top";
+    
+    const lines = shape.text.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], shape.position.x, shape.position.y + i * shape.fontSize * 1.2);
+    }
+}
+
 export function redrawCanvas(
     ctx: CanvasRenderingContext2D,
     canvas: HTMLCanvasElement,
@@ -165,6 +179,9 @@ export function redrawCanvas(
                     ctx.stroke();
                     ctx.restore();
                 }
+                break;
+            case "text":
+                text(ctx, shape as TextShape);
                 break;
         }
     }
