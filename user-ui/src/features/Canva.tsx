@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { pencil, rectangle, circle, line, roundedRectangle, rhombus, arrow, redrawCanvas } from "./draw";
-import { isShapeHit } from "./utils";
+import { isShapeHit, getBoundingBox, getHandleHit, translateShape, resizeShape } from "./utils";
 import type { Shape, Point } from "./types";
 
 type CanvasProps = {
@@ -26,6 +26,10 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
   const [dragStartPoint, setDragStartPoint] = useState({ x: 0, y: 0 });
   const [textInput, setTextInput] = useState<{ x: number, y: number, worldX: number, worldY: number } | null>(null);
   
+  const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
+  const [interactionMode, setInteractionMode] = useState<"panning" | "moving" | "resizing" | null>(null);
+  const [activeHandle, setActiveHandle] = useState<string | null>(null);
+  
   const erasedShapesRef = useRef<Set<string>>(new Set());
   const hasErasedRef = useRef(false);
 
@@ -49,7 +53,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
       ctx.strokeStyle = "black";
       ctxRef.current = ctx;
 
-      redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom);
+      redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom, selectedShapeId);
     };
 
     // Initial setup
@@ -57,7 +61,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [shapes, pan, zoom]);
+  }, [shapes, pan, zoom, selectedShapeId]);
 
   useEffect(() => {
     const ctx = ctxRef.current;
@@ -65,8 +69,8 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
 
     if (!ctx || !canvas) return;
 
-    redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom);
-  }, [shapes, pan, zoom]);
+    redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom, selectedShapeId);
+  }, [shapes, pan, zoom, selectedShapeId]);
 
   const getWorldCoordinates = (clientX: number, clientY: number) => {
     const scale = zoom / 100;
@@ -78,13 +82,48 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
 
   const handlePointerDown = (e: React.PointerEvent) => {
     e.currentTarget.setPointerCapture(e.pointerId);
+    const { x: worldX, y: worldY } = getWorldCoordinates(e.clientX, e.clientY);
+    
     if (tool === "pointer") {
       setDragStartPoint({ x: e.clientX, y: e.clientY });
+      
+      let mode: "panning" | "moving" | "resizing" = "panning";
+      
+      if (selectedShapeId) {
+        const selectedShape = shapes.find(s => s.id === selectedShapeId);
+        if (selectedShape) {
+            const bb = getBoundingBox(selectedShape);
+            const handle = getHandleHit(bb, worldX, worldY, zoom);
+            if (handle) {
+                mode = "resizing";
+                setActiveHandle(handle);
+                setInteractionMode(mode);
+                setDrawing(true);
+                return;
+            }
+        }
+      }
+
+      let hitShapeId: string | null = null;
+      for (let i = shapes.length - 1; i >= 0; i--) {
+          if (isShapeHit(shapes[i], worldX, worldY, 15)) {
+              hitShapeId = shapes[i].id;
+              break;
+          }
+      }
+
+      setSelectedShapeId(hitShapeId);
+      if (hitShapeId) {
+          mode = "moving";
+      } else {
+          mode = "panning";
+      }
+
+      setInteractionMode(mode);
       setDrawing(true);
       return;
     }
 
-    const { x: worldX, y: worldY } = getWorldCoordinates(e.clientX, e.clientY);
     setPrevPoint({ x: worldX, y: worldY });
     currentPathRef.current = [{ x: worldX, y: worldY }];
 
@@ -113,7 +152,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
                 
                 const ctx = ctxRef.current;
                 const canvas = canvasRef.current;
-                if (ctx && canvas) redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom);
+                if (ctx && canvas) redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom, selectedShapeId);
                 break; // erase top-most shape only on down
             }
         }
@@ -124,10 +163,31 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
     if (!drawing) return;
 
     if (tool === "pointer") {
-      const dx = e.clientX - dragStartPoint.x;
-      const dy = e.clientY - dragStartPoint.y;
-      setPan((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
-      setDragStartPoint({ x: e.clientX, y: e.clientY });
+      const dxClient = e.clientX - dragStartPoint.x;
+      const dyClient = e.clientY - dragStartPoint.y;
+      
+      if (interactionMode === "panning") {
+          setPan((prev) => ({ x: prev.x + dxClient, y: prev.y + dyClient }));
+          setDragStartPoint({ x: e.clientX, y: e.clientY });
+      } else if (interactionMode === "moving" && selectedShapeId) {
+          const scale = zoom / 100;
+          const dxWorld = dxClient / scale;
+          const dyWorld = dyClient / scale;
+          
+          setShapes(prev => prev.map(s => 
+              s.id === selectedShapeId ? translateShape(s, dxWorld, dyWorld) : s
+          ));
+          setDragStartPoint({ x: e.clientX, y: e.clientY });
+      } else if (interactionMode === "resizing" && selectedShapeId && activeHandle) {
+          const scale = zoom / 100;
+          const dxWorld = dxClient / scale;
+          const dyWorld = dyClient / scale;
+          
+          setShapes(prev => prev.map(s => 
+              s.id === selectedShapeId ? resizeShape(s, activeHandle, dxWorld, dyWorld) : s
+          ));
+          setDragStartPoint({ x: e.clientX, y: e.clientY });
+      }
       return;
     }
 
@@ -148,7 +208,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
             }
         }
         if (erasedAny) {
-            redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom);
+            redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom, selectedShapeId);
         }
         return;
     }
@@ -172,7 +232,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
     }
 
     // For other shapes, clear and redraw everything, then draw temporary shape
-    redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom);
+    redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom, selectedShapeId);
 
     ctx.save();
     ctx.strokeStyle = color;
@@ -205,7 +265,12 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
   const handlePointerUp = (e: React.PointerEvent) => {
     e.currentTarget.releasePointerCapture(e.pointerId);
     if (tool === "pointer") {
+      if (drawing && (interactionMode === "moving" || interactionMode === "resizing")) {
+          setRedoStack([]);
+      }
       setDrawing(false);
+      setInteractionMode(null);
+      setActiveHandle(null);
       return;
     }
 

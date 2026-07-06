@@ -90,3 +90,12 @@ export type TextShape = {
 };
 
 export type Shape = Rectangle | Circle | Line | Pencil | Brush | Eraser | RoundedRectangle | Rhombus | Arrow | TextShape;
+
+export type BoundingBox = {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+};
+
+export type ResizeHandle = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w";

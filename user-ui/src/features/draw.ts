@@ -1,4 +1,5 @@
 import type { Point, Shape, TextShape } from "./types.ts";
+import { getBoundingBox } from "./utils.ts";
 
 export function pencil(
     ctx: CanvasRenderingContext2D,
@@ -124,7 +125,8 @@ export function redrawCanvas(
     canvas: HTMLCanvasElement,
     shapes: Shape[],
     pan = { x: 0, y: 0 },
-    zoom = 100
+    zoom = 100,
+    selectedShapeId: string | null = null
 ) {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -183,6 +185,43 @@ export function redrawCanvas(
             case "text":
                 text(ctx, shape as TextShape);
                 break;
+        }
+
+        if (selectedShapeId === shape.id) {
+            const bb = getBoundingBox(shape);
+            
+            ctx.save();
+            ctx.strokeStyle = "#4FC1CF";
+            ctx.lineWidth = 1.5 / (zoom / 100);
+            ctx.setLineDash([5 / (zoom / 100), 5 / (zoom / 100)]);
+            
+            // Draw bounding box
+            ctx.strokeRect(bb.minX, bb.minY, bb.maxX - bb.minX, bb.maxY - bb.minY);
+            
+            // Draw handles
+            ctx.setLineDash([]);
+            ctx.fillStyle = "white";
+            
+            const handleSize = 8 / (zoom / 100);
+            const h = handleSize / 2;
+            
+            const handles = [
+                { x: bb.minX, y: bb.minY },
+                { x: bb.maxX, y: bb.minY },
+                { x: bb.minX, y: bb.maxY },
+                { x: bb.maxX, y: bb.maxY },
+                { x: (bb.minX + bb.maxX) / 2, y: bb.minY },
+                { x: (bb.minX + bb.maxX) / 2, y: bb.maxY },
+                { x: bb.maxX, y: (bb.minY + bb.maxY) / 2 },
+                { x: bb.minX, y: (bb.minY + bb.maxY) / 2 }
+            ];
+            
+            for (const handle of handles) {
+                ctx.fillRect(handle.x - h, handle.y - h, handleSize, handleSize);
+                ctx.strokeRect(handle.x - h, handle.y - h, handleSize, handleSize);
+            }
+            
+            ctx.restore();
         }
     }
     
