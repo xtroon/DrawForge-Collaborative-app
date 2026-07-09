@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { PenTool } from 'lucide-react'
 
 export const Footer = () => {
