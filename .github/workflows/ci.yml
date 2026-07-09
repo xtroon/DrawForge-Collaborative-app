@@ -37,22 +37,3 @@ jobs:
       - name: Build user-ui
         run: npm run build
         working-directory: ./user-ui
-        
-  deploy:
-    name: Deploy Application
-    needs: build
-
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Deployment Placeholder
-        run: |
-          echo "====================================="
-          echo "Build Successful ✅"
-          echo "Ready to Deploy DrawForge"
-          echo "====================================="
