@@ -15,8 +15,7 @@ export const Footer = () => {
           <div className="flex items-center gap-6 text-lg">
             <a href="#" className="hover:text-[#FF6B6B] transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-[#FF6B6B] transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-[#FF6B6B] transition-colors">Twitter</a>
-            <a href="#" className="hover:text-[#FF6B6B] transition-colors">GitHub</a>
+            <a href="https://github.com/xtroon/DrawForge-Collaborative-app" target="_blank" className="hover:text-[#FF6B6B] transition-colors">GitHub</a>
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-8 text-center md:text-left text-[#8a8a86]">

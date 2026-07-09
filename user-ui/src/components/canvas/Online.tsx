@@ -17,9 +17,10 @@ const users: User[] = [
 type OnlineProps = {
   zoom: number;
   setZoom: (z: number) => void;
+  onShareClick: () => void;
 };
 
-export default function Online({ zoom, setZoom }: OnlineProps) {
+export default function Online({ zoom, setZoom, onShareClick }: OnlineProps) {
   const [showUsers, setShowUsers] = useState(false);
 
   const handleZoomIn = () => setZoom(Math.min(zoom + 10, 300));
@@ -81,7 +82,7 @@ export default function Online({ zoom, setZoom }: OnlineProps) {
       </div>
 
       {/* share btn */}
-      <button className="cursor-pointer doodle-btn bg-[#9B7EDE] text-[#2B2B2A] border-2 border-[#2B2B2A] px-5 py-2 flex justify-between items-center gap-2 font-doodle font-bold text-2xl shadow-[3px_3px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_#2B2B2A] transition-all">
+      <button onClick={onShareClick} className="cursor-pointer doodle-btn bg-[#9B7EDE] text-[#2B2B2A] border-2 border-[#2B2B2A] px-5 py-2 flex justify-between items-center gap-2 font-doodle font-bold text-2xl shadow-[3px_3px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_#2B2B2A] transition-all">
         Share
         <FiShare size={20}/>
       </button>

@@ -13,9 +13,10 @@ type CanvasProps = {
   shapes: Shape[];
   setShapes: React.Dispatch<React.SetStateAction<Shape[]>>;
   setRedoStack: React.Dispatch<React.SetStateAction<Shape[]>>;
+  commitShapes?: (shapes: Shape[]) => void;
 };
 
-export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, shapes, setShapes, setRedoStack }: CanvasProps) {
+export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, shapes, setShapes, setRedoStack, commitShapes }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -262,11 +263,20 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
     ctx.restore();
   };
 
+  const commitAndSet = (updater: (prev: Shape[]) => Shape[]) => {
+      setShapes(prev => {
+          const next = updater(prev);
+          if (commitShapes) Promise.resolve().then(() => commitShapes(next));
+          return next;
+      });
+      setRedoStack([]);
+  };
+
   const handlePointerUp = (e: React.PointerEvent) => {
     e.currentTarget.releasePointerCapture(e.pointerId);
     if (tool === "pointer") {
       if (drawing && (interactionMode === "moving" || interactionMode === "resizing")) {
-          setRedoStack([]);
+          commitAndSet(prev => prev);
       }
       setDrawing(false);
       setInteractionMode(null);
@@ -279,10 +289,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
 
     if (tool === "eraser") {
         if (hasErasedRef.current) {
-            setShapes((prev) => prev.map(s => 
-              erasedShapesRef.current.has(s.id) ? { ...s, color: "#FFFDF6" } as any : s
-            ));
-            setRedoStack([]);
+            commitAndSet((prev) => prev.filter(s => !erasedShapesRef.current.has(s.id)));
         }
         erasedShapesRef.current.clear();
         hasErasedRef.current = false;
@@ -293,7 +300,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
     const { x: worldX, y: worldY } = getWorldCoordinates(e.clientX, e.clientY);
 
     if (tool === "rectangle") {
-      setShapes((prev) => [
+      commitAndSet((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
@@ -304,10 +311,9 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
           strokeWidth,
         },
       ]);
-      setRedoStack([]);
     }
     if (tool === "circle") {
-      setShapes((prev) => [
+      commitAndSet((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
@@ -318,10 +324,9 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
           strokeWidth,
         },
       ]);
-      setRedoStack([]);
     }
     if (tool === "line") {
-      setShapes((prev) => [
+      commitAndSet((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
@@ -332,24 +337,22 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
           strokeWidth,
         },
       ]);
-      setRedoStack([]);
     }
     if (tool === "rounded-rectangle" || tool === "rhombus" || tool === "arrow") {
-      setShapes((prev) => [
+      commitAndSet((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
-          type: tool,
+          type: tool as any,
           start: prevPoint,
           end: { x: worldX, y: worldY },
           color,
           strokeWidth,
         },
       ]);
-      setRedoStack([]);
     }
     if (tool === "pencil" || tool === "brush") {
-      setShapes((prev) => [
+      commitAndSet((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
@@ -359,7 +362,6 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
           strokeWidth,
         },
       ]);
-      setRedoStack([]);
     }
     setDrawing(false);
   };
@@ -394,15 +396,20 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
           }}
           onBlur={(e) => {
             if (e.target.value.trim()) {
-              setShapes(prev => [...prev, {
-                id: Math.random().toString(36).substr(2, 9),
+              const updater = (prev: Shape[]) => [...prev, {
+                id: crypto.randomUUID(),
                 type: 'text',
                 position: { x: textInput.worldX, y: textInput.worldY },
                 text: e.target.value,
                 color,
                 fontSize: 24,
                 strokeWidth: 0
-              } as any]);
+              } as any];
+              setShapes(prev => {
+                const next = updater(prev);
+                if (commitShapes) Promise.resolve().then(() => commitShapes(next));
+                return next;
+              });
             }
             setTextInput(null);
           }}

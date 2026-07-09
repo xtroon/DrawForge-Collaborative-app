@@ -5,7 +5,9 @@ import {
   MdFullscreen,
   MdFullscreenExit,
   MdKeyboardBackspace,
+  MdClose,
 } from "react-icons/md";
+import Share from "../../components/Share";
 import { Link } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import type { Shape } from "../../features/types";
@@ -20,26 +22,38 @@ function Workspace() {
   const [zoom, setZoom] = useState(100);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(false);
+  const [showSharePopup, setShowSharePopup] = useState(false);
   
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [redoStack, setRedoStack] = useState<Shape[]>([]);
+  const [history, setHistory] = useState<Shape[][]>([[]]);
+  const [historyStep, setHistoryStep] = useState(0);
 
   const appRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(zoom);
   const panRef = useRef(pan);
 
+  const commitShapes = (newShapes: Shape[]) => {
+    const newHistory = history.slice(0, historyStep + 1);
+    newHistory.push(newShapes);
+    setHistory(newHistory);
+    setHistoryStep(newHistory.length - 1);
+  };
+
   const handleUndo = () => {
-    if (shapes.length === 0) return;
-    const lastShape = shapes[shapes.length - 1];
-    setShapes((prev) => prev.slice(0, -1));
-    setRedoStack((prev) => [...prev, lastShape]);
+    if (historyStep > 0) {
+      const newStep = historyStep - 1;
+      setHistoryStep(newStep);
+      setShapes(history[newStep]);
+    }
   };
 
   const handleRedo = () => {
-    if (redoStack.length === 0) return;
-    const shapeToRestore = redoStack[redoStack.length - 1];
-    setRedoStack((prev) => prev.slice(0, -1));
-    setShapes((prev) => [...prev, shapeToRestore]);
+    if (historyStep < history.length - 1) {
+      const newStep = historyStep + 1;
+      setHistoryStep(newStep);
+      setShapes(history[newStep]);
+    }
   };
 
   useEffect(() => {
@@ -126,6 +140,7 @@ function Workspace() {
           shapes={shapes}
           setShapes={setShapes}
           setRedoStack={setRedoStack}
+          commitShapes={commitShapes}
         />
 
         {/* toolbar  */}
@@ -138,14 +153,14 @@ function Workspace() {
           setStrokeWidth={setStrokeWidth} 
           onUndo={handleUndo}
           onRedo={handleRedo}
-          canUndo={shapes.length > 0}
-          canRedo={redoStack.length > 0}
+          canUndo={historyStep > 0}
+          canRedo={historyStep < history.length - 1}
           showGrid={showGrid}
           setShowGrid={setShowGrid}
         />
 
         {/* current online users  */}
-        <Online zoom={zoom} setZoom={setZoom} />
+        <Online zoom={zoom} setZoom={setZoom} onShareClick={() => setShowSharePopup(true)} />
 
         {/* back to dashboard button */}
         <Link 
@@ -166,6 +181,21 @@ function Workspace() {
             <MdFullscreen size={24} />
           )}
         </button>
+
+        {/* share popup */}
+        {showSharePopup && (
+          <div className="fixed inset-0 bg-[#2B2B2A]/40 backdrop-blur-sm z-[100] flex items-center justify-center">
+            <div className="relative animate-in zoom-in duration-200">
+              <button 
+                onClick={() => setShowSharePopup(false)}
+                className="absolute -top-3 -right-3 bg-white border-2 border-[#2B2B2A] rounded-full p-1.5 hover:bg-[#FF6B6B] hover:text-white transition-colors shadow-[2px_2px_0_#2B2B2A] z-[101]"
+              >
+                <MdClose size={20} />
+              </button>
+              <Share />
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
