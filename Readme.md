@@ -56,15 +56,3 @@ Ensure you have Node.js and npm (or yarn) installed on your machine.
 
 ---
 *Built to make visual collaboration seamless and fast.*
-
-## 🤝 Contributing
-We love your input! We want to make contributing to this project as easy and transparent as possible. Please open issues and pull requests on our GitHub repository. We use GitHub Flow.
-
-## ⚖️ Code of Conduct
-We as members, contributors, and leaders pledge to make participation in our community a harassment-free experience for everyone. We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy community.
-
-## 🔒 Security Policy
-Please report any security vulnerabilities via the GitHub security advisories feature or by contacting the maintainers directly. Do not open public issues for security vulnerabilities.
-
-## 📄 License
-This project is licensed under the MIT License.
