@@ -25,7 +25,6 @@ function Workspace() {
   const [showSharePopup, setShowSharePopup] = useState(false);
   
   const [shapes, setShapes] = useState<Shape[]>([]);
-  const [redoStack, setRedoStack] = useState<Shape[]>([]);
   const [history, setHistory] = useState<Shape[][]>([[]]);
   const [historyStep, setHistoryStep] = useState(0);
 
@@ -139,7 +138,6 @@ function Workspace() {
           strokeWidth={strokeWidth}
           shapes={shapes}
           setShapes={setShapes}
-          setRedoStack={setRedoStack}
           commitShapes={commitShapes}
         />
 

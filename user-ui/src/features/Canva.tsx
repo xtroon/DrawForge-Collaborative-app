@@ -12,11 +12,10 @@ type CanvasProps = {
   strokeWidth: number;
   shapes: Shape[];
   setShapes: React.Dispatch<React.SetStateAction<Shape[]>>;
-  setRedoStack: React.Dispatch<React.SetStateAction<Shape[]>>;
   commitShapes?: (shapes: Shape[]) => void;
 };
 
-export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, shapes, setShapes, setRedoStack, commitShapes }: CanvasProps) {
+export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, shapes, setShapes, commitShapes }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -269,7 +268,6 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
           if (commitShapes) Promise.resolve().then(() => commitShapes(next));
           return next;
       });
-      setRedoStack([]);
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
