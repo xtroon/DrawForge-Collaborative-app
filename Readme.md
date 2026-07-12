@@ -2,20 +2,23 @@
 
 DrawForge is a lightweight, interactive collaborative whiteboard application built with React and HTML5 Canvas. It allows users to freely express their ideas through various drawing tools and shape creation.
 
-## 🚀 Features
+## Features
 
-- **Freehand Drawing**: Sketch your ideas naturally using the Pencil tool.
-- **Shape Tools**: Quickly create structured diagrams with the Rectangle, Circle, and Line tools.
-- **State Management**: Your drawing sessions are managed as discrete shapes, allowing for robust redrawing and state retention.
-- **Responsive Canvas**: The whiteboard automatically sizes to fit your browser window.
+- **Freehand Drawing**: Sketch your ideas naturally using the Pencil and Brush tools.
+- **Shape Tools**: Quickly create structured diagrams with Rectangle, Circle, Line, Arrow, Rhombus, and more.
+- **Color & Stroke Control**: Customize your drawing with different colors and stroke widths.
+- **Selection & Movement**: Select, move, and resize your drawn shapes freely.
+- **History System**: Full Undo and Redo functionality to easily revert or reapply actions (including erasures).
+- **Export & Share**: Share your board with others via a link or room code, or export it as an image/PDF.
+- **Responsive Canvas**: The whiteboard automatically sizes to fit your browser window, with Zoom and Pan controls.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Frontend**: React, TypeScript
 - **Drawing API**: HTML5 Canvas API
 - **Styling**: Tailwind CSS (Optional, based on classes used)
 
-## 📦 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -41,19 +44,27 @@ Ensure you have Node.js and npm (or yarn) installed on your machine.
 4. **Open in Browser:**
    Open [http://localhost:5173](http://localhost:5173) (or the port provided by your terminal) in your browser to start drawing!
 
-## 🏗️ Project Structure
+## Project Structure
 
 - `src/features/Canva.tsx`: The core React component managing the canvas element, drawing events (mousedown, mousemove, mouseup), and shape state.
 - `src/features/draw.ts`: Contains the pure drawing functions for different tools (`pencil`, `rectangle`, `circle`, `line`) and the redraw logic.
 - `src/features/types.ts`: Defines the TypeScript interfaces for the application's data models (`Point`, `Shape`, `Rectangle`, `Circle`, etc.).
 
-## 📝 Future Scope
+## Future Scope
 
 - Real-time collaboration via WebSockets
-- Color and stroke width selection
-- Shape selection, movement, and deletion
-- Undo / Redo functionality
-- Exporting the canvas to an image
 
 ---
 *Built to make visual collaboration seamless and fast.*
+
+## 🤝 Contributing
+We love your input! We want to make contributing to this project as easy and transparent as possible. Please open issues and pull requests on our GitHub repository. We use GitHub Flow.
+
+## ⚖️ Code of Conduct
+We as members, contributors, and leaders pledge to make participation in our community a harassment-free experience for everyone. We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy community.
+
+## 🔒 Security Policy
+Please report any security vulnerabilities via the GitHub security advisories feature or by contacting the maintainers directly. Do not open public issues for security vulnerabilities.
+
+## 📄 License
+This project is licensed under the MIT License.
