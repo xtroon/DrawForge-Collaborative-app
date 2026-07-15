@@ -17,7 +17,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  // We can track the boards this user is a part of
   boards: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Board'

@@ -8,11 +8,13 @@ import {
   MdClose,
 } from "react-icons/md";
 import Share from "../../components/Share";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
+import axios from "axios";
 import type { Shape } from "../../features/types";
 
 function Workspace() {
+  const { id } = useParams<{ id: string }>();
   const [tool, setTool] = useState<"pointer" | "pencil" | "brush" | "eraser" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow" | "text">(
     "pencil",
   );
@@ -32,11 +34,29 @@ function Workspace() {
   const zoomRef = useRef(zoom);
   const panRef = useRef(pan);
 
+  useEffect(() => {
+    if (!id) return;
+    axios.get(`http://localhost:5000/api/boards/${id}`)
+      .then(res => {
+        if (res.data && res.data.shapes) {
+          setShapes(res.data.shapes);
+          setHistory([res.data.shapes]);
+          setHistoryStep(0);
+        }
+      })
+      .catch(err => console.error("Failed to load board:", err));
+  }, [id]);
+
   const commitShapes = (newShapes: Shape[]) => {
     const newHistory = history.slice(0, historyStep + 1);
     newHistory.push(newShapes);
     setHistory(newHistory);
     setHistoryStep(newHistory.length - 1);
+
+    if (id) {
+      axios.put(`http://localhost:5000/api/boards/${id}/shapes`, { shapes: newShapes })
+        .catch(err => console.error("Failed to save shapes:", err));
+    }
   };
 
   const handleUndo = () => {

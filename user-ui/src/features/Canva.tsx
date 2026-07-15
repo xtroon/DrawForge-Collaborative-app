@@ -287,7 +287,8 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
 
     if (tool === "eraser") {
         if (hasErasedRef.current) {
-            commitAndSet((prev) => prev.filter(s => !erasedShapesRef.current.has(s.id)));
+            const erasedIds = new Set(erasedShapesRef.current);
+            commitAndSet((prev) => prev.filter(s => !erasedIds.has(s.id)));
         }
         erasedShapesRef.current.clear();
         hasErasedRef.current = false;

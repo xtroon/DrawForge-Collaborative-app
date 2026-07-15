@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-
 const { shapeSchema } = require('./shape.model');
 
 const boardSchema = new mongoose.Schema({
