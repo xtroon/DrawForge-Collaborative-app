@@ -62,3 +62,22 @@ exports.updateBoardShapes = async (req, res) => {
     res.status(500).json({ error: 'Failed to update shapes', details: error.message });
   }
 };
+
+const User = require('../models/user.model');
+
+// get boards by user clerkId
+exports.getUserBoards = async (req, res) => {
+  try {
+    const { clerkId } = req.params;
+    
+    const user = await User.findOne({ clerkId });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const boards = await Board.find({ owner: user._id }).sort({ updatedAt: -1 });
+    res.status(200).json(boards);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch user boards', details: error.message });
+  }
+};

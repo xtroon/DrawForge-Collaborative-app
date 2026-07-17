@@ -15,7 +15,15 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required: false
+  },
+  clerkId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  picture: {
+    type: String
   },
   boards: [{
     type: mongoose.Schema.Types.ObjectId,

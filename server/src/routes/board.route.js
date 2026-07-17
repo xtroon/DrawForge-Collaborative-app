@@ -7,5 +7,6 @@ router.get('/:id', boardController.getBoard);
 
 
 router.put('/:id/shapes', boardController.updateBoardShapes);
+router.get('/user/:clerkId', boardController.getUserBoards);
 
 module.exports = router;
