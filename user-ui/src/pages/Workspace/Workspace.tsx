@@ -13,6 +13,7 @@ import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import type { Shape } from "../../features/types";
 import { useAuth } from "../../contexts/AuthContext";
+import { socket } from "../../services/socket";
 
 function Workspace() {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +43,9 @@ function Workspace() {
   const zoomRef = useRef(zoom);
   const panRef = useRef(pan);
   const isCreatingRef = useRef(false);
+  const lastEmitRef = useRef(0);
+  
+  const [cursors, setCursors] = useState<Record<string, { x: number; y: number; user: { name: string } }>>({});
 
   useEffect(() => {
     if (!id || !user) return;
@@ -80,6 +84,48 @@ function Workspace() {
       .catch(err => console.error("Failed to load board:", err));
   }, [id, user, navigate]);
 
+  useEffect(() => {
+    if (id && id !== "new") {
+      socket.emit('join-room', id);
+
+      const handleShapesUpdated = (newShapes: Shape[]) => {
+        setShapes(newShapes);
+        setHistory(prev => {
+          const newHistory = [...prev];
+          newHistory.push(newShapes);
+          return newHistory;
+        });
+        setHistoryStep(prev => prev + 1);
+      };
+
+      const handleCursorMoved = (data: { socketId: string, x: number, y: number, user: { name: string } }) => {
+        setCursors(prev => ({
+          ...prev,
+          [data.socketId]: { x: data.x, y: data.y, user: data.user }
+        }));
+      };
+
+      const handleCursorDisconnected = (socketId: string) => {
+        setCursors(prev => {
+          const newCursors = { ...prev };
+          delete newCursors[socketId];
+          return newCursors;
+        });
+      };
+
+      socket.on('shapes-updated', handleShapesUpdated);
+      socket.on('cursor-moved', handleCursorMoved);
+      socket.on('cursor-disconnected', handleCursorDisconnected);
+
+      return () => {
+        socket.emit('leave-room', id);
+        socket.off('shapes-updated', handleShapesUpdated);
+        socket.off('cursor-moved', handleCursorMoved);
+        socket.off('cursor-disconnected', handleCursorDisconnected);
+      };
+    }
+  }, [id]);
+
   const commitShapes = (newShapes: Shape[]) => {
     const newHistory = history.slice(0, historyStep + 1);
     newHistory.push(newShapes);
@@ -89,6 +135,7 @@ function Workspace() {
     if (id) {
       axios.put(`http://localhost:5000/api/boards/${id}/shapes`, { shapes: newShapes })
         .catch(err => console.error("Failed to save shapes:", err));
+      socket.emit('update-shapes', { roomId: id, shapes: newShapes });
     }
   };
 
@@ -110,6 +157,10 @@ function Workspace() {
       const newStep = historyStep - 1;
       setHistoryStep(newStep);
       setShapes(history[newStep]);
+      if (id && id !== "new") {
+        socket.emit('update-shapes', { roomId: id, shapes: history[newStep] });
+        axios.put(`http://localhost:5000/api/boards/${id}/shapes`, { shapes: history[newStep] }).catch(err => console.error(err));
+      }
     }
   };
 
@@ -118,6 +169,10 @@ function Workspace() {
       const newStep = historyStep + 1;
       setHistoryStep(newStep);
       setShapes(history[newStep]);
+      if (id && id !== "new") {
+        socket.emit('update-shapes', { roomId: id, shapes: history[newStep] });
+        axios.put(`http://localhost:5000/api/boards/${id}/shapes`, { shapes: history[newStep] }).catch(err => console.error(err));
+      }
     }
   };
 
@@ -178,11 +233,31 @@ function Workspace() {
 
   const isAdmin = user && user.id === boardOwnerId;
 
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const now = Date.now();
+    if (now - lastEmitRef.current > 50) {
+      if (id && id !== "new" && user) {
+        const scale = zoom / 100;
+        const worldX = (e.clientX - pan.x) / scale;
+        const worldY = (e.clientY - pan.y) / scale;
+
+        socket.emit('cursor-move', {
+          roomId: id,
+          x: worldX,
+          y: worldY,
+          user: { name: user.name }
+        });
+        lastEmitRef.current = now;
+      }
+    }
+  };
+
   return (
     <>
       <div 
         ref={appRef} 
         className="min-h-screen relative overflow-hidden text-[#2B2B2A] selection:bg-[#FFC53D]/50"
+        onPointerMove={handlePointerMove}
         style={{
           fontFamily: "'Patrick Hand', cursive",
           backgroundColor: "#FFFDF6",
@@ -196,6 +271,34 @@ function Workspace() {
           .font-doodle { font-family: 'Caveat', cursive; }
           .doodle-btn { border-radius: 200px 15px 190px 15px / 15px 190px 15px 200px; }
         `}</style>
+        
+        {/* Render Live Cursors */}
+        {Object.entries(cursors).map(([socketId, cursor]) => {
+          const screenX = cursor.x * (zoom / 100) + pan.x;
+          const screenY = cursor.y * (zoom / 100) + pan.y;
+          
+          return (
+            <div
+              key={socketId}
+              className="absolute pointer-events-none z-[45] transition-all duration-75 ease-linear flex items-start"
+              style={{ transform: `translate(${screenX}px, ${screenY}px)` }}
+            >
+              <svg 
+                width="24" height="36" viewBox="0 0 24 36" fill="none" 
+                className="drop-shadow-md" style={{ transform: "rotate(-15deg)", transformOrigin: "top left" }}
+              >
+                <path d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19841L11.7871 12.3673H5.65376Z" fill="#FF6B6B"/>
+                <path d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19841L11.7871 12.3673H5.65376Z" stroke="white" strokeWidth="1"/>
+              </svg>
+              <div 
+                className="bg-[#FF6B6B] text-white font-bold text-xs px-2 py-0.5 rounded-full rounded-tl-none whitespace-nowrap shadow-sm mt-4 -ml-1"
+              >
+                {cursor.user.name}
+              </div>
+            </div>
+          );
+        })}
+
         {/* canvas */}
         <Canvas 
           tool={tool} 
