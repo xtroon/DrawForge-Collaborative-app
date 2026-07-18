@@ -50,7 +50,7 @@ exports.updateBoardShapes = async (req, res) => {
     const updatedBoard = await Board.findByIdAndUpdate(
       id,
       { shapes },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
 
     if (!updatedBoard) {
@@ -90,7 +90,7 @@ exports.updateBoardTitle = async (req, res) => {
     const updatedBoard = await Board.findByIdAndUpdate(
       id,
       { title },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
 
     if (!updatedBoard) {
@@ -135,7 +135,7 @@ exports.toggleStar = async (req, res) => {
     const updatedBoard = await Board.findByIdAndUpdate(
       id,
       { isStarred },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updatedBoard) {
@@ -161,7 +161,7 @@ exports.toggleTrash = async (req, res) => {
     const updatedBoard = await Board.findByIdAndUpdate(
       id,
       { isTrashed },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updatedBoard) {

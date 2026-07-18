@@ -5,15 +5,12 @@ import {
   PenTool,
   Search,
   Plus,
-  Users,
   LayoutGrid,
   Clock,
   Star,
   Trash2,
-  Settings,
   DoorOpen,
   MoreHorizontal,
-  Grid3x3,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -137,7 +134,7 @@ export default function Dashboard() {
   const toggleStar = (e: React.MouseEvent, id: string, currentStarred: boolean) => {
     e.stopPropagation();
     axios.put(`http://localhost:5000/api/boards/${id}/star`, { isStarred: !currentStarred })
-      .then(res => {
+      .then(() => {
         setBoards(boards.map(b => b._id === id ? { ...b, isStarred: !currentStarred } : b));
       })
       .catch(err => console.error("Failed to toggle star", err));
@@ -145,7 +142,7 @@ export default function Dashboard() {
 
   const toggleTrash = (id: string, currentTrashed: boolean) => {
     axios.put(`http://localhost:5000/api/boards/${id}/trash`, { isTrashed: !currentTrashed })
-      .then(res => {
+      .then(() => {
         setBoards(boards.map(b => b._id === id ? { ...b, isTrashed: !currentTrashed } : b));
         setOpenDropdownId(null);
       })
