@@ -19,16 +19,35 @@ const io = new Server(server, {
   }
 });
 
+const roomUsers = {};
+
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
-  socket.on('join-room', (roomId) => {
+  socket.on('join-room', (data) => {
+    // Check if data is string (old) or object (new)
+    const roomId = typeof data === 'string' ? data : data.roomId;
+    const user = typeof data === 'object' ? data.user : { name: "Guest" };
+    
     socket.join(roomId);
+    
+    if (!roomUsers[roomId]) roomUsers[roomId] = [];
+    // Remove if already exists to prevent dupes just in case
+    roomUsers[roomId] = roomUsers[roomId].filter(u => u.socketId !== socket.id);
+    roomUsers[roomId].push({ socketId: socket.id, user });
+    
+    io.to(roomId).emit('room-users', roomUsers[roomId]);
     console.log(`Socket ${socket.id} joined room ${roomId}`);
   });
 
   socket.on('leave-room', (roomId) => {
     socket.leave(roomId);
+    if (roomUsers[roomId]) {
+      roomUsers[roomId] = roomUsers[roomId].filter(u => u.socketId !== socket.id);
+      io.to(roomId).emit('room-users', roomUsers[roomId]);
+    }
+    // Remove their cursor
+    io.to(roomId).emit('cursor-disconnected', socket.id);
     console.log(`Socket ${socket.id} left room ${roomId}`);
   });
 
@@ -55,6 +74,10 @@ io.on('connection', (socket) => {
     for (const room of socket.rooms) {
       if (room !== socket.id) {
         socket.to(room).emit('cursor-disconnected', socket.id);
+        if (roomUsers[room]) {
+          roomUsers[room] = roomUsers[room].filter(u => u.socketId !== socket.id);
+          io.to(room).emit('room-users', roomUsers[room]);
+        }
       }
     }
   });

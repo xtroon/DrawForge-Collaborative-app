@@ -14,6 +14,7 @@ import axios from "axios";
 import type { Shape } from "../../features/types";
 import { useAuth } from "../../contexts/AuthContext";
 import { socket } from "../../services/socket";
+import { jsPDF } from "jspdf";
 
 function Workspace() {
   const { id } = useParams<{ id: string }>();
@@ -46,6 +47,7 @@ function Workspace() {
   const lastEmitRef = useRef(0);
   
   const [cursors, setCursors] = useState<Record<string, { x: number; y: number; user: { name: string } }>>({});
+  const [liveUsers, setLiveUsers] = useState<Array<{ socketId: string, user: { name: string } }>>([]);
 
   useEffect(() => {
     if (!id || !user) return;
@@ -86,7 +88,10 @@ function Workspace() {
 
   useEffect(() => {
     if (id && id !== "new") {
-      socket.emit('join-room', id);
+      socket.emit('join-room', { 
+        roomId: id, 
+        user: { name: user?.name || "Guest" } 
+      });
 
       const handleShapesUpdated = (newShapes: Shape[]) => {
         setShapes(newShapes);
@@ -113,18 +118,24 @@ function Workspace() {
         });
       };
 
+      const handleRoomUsers = (users: Array<{ socketId: string, user: { name: string } }>) => {
+        setLiveUsers(users);
+      };
+
       socket.on('shapes-updated', handleShapesUpdated);
       socket.on('cursor-moved', handleCursorMoved);
       socket.on('cursor-disconnected', handleCursorDisconnected);
+      socket.on('room-users', handleRoomUsers);
 
       return () => {
         socket.emit('leave-room', id);
         socket.off('shapes-updated', handleShapesUpdated);
         socket.off('cursor-moved', handleCursorMoved);
         socket.off('cursor-disconnected', handleCursorDisconnected);
+        socket.off('room-users', handleRoomUsers);
       };
     }
-  }, [id]);
+  }, [id, user]);
 
   const commitShapes = (newShapes: Shape[]) => {
     const newHistory = history.slice(0, historyStep + 1);
@@ -252,6 +263,29 @@ function Workspace() {
     }
   };
 
+  const exportImage = () => {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+    const link = document.createElement('a');
+    link.download = `${boardTitle || 'board'}.png`;
+    link.href = dataUrl;
+    link.click();
+  };
+
+  const exportPDF = () => {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return;
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({
+      orientation: canvas.width > canvas.height ? "landscape" : "portrait",
+      unit: "px",
+      format: [canvas.width, canvas.height]
+    });
+    pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+    pdf.save(`${boardTitle || 'board'}.pdf`);
+  };
+
   return (
     <>
       <div 
@@ -329,7 +363,7 @@ function Workspace() {
         />
 
         {/* current online users  */}
-        <Online zoom={zoom} setZoom={setZoom} onShareClick={() => setShowSharePopup(true)} />
+        <Online zoom={zoom} setZoom={setZoom} onShareClick={() => setShowSharePopup(true)} liveUsers={liveUsers} />
 
         {/* top-left controls */}
         <div className="fixed top-6 left-6 z-50 flex items-center gap-4">
@@ -393,7 +427,12 @@ function Workspace() {
               >
                 <MdClose size={20} />
               </button>
-              <Share />
+              <Share 
+                link={window.location.href}
+                code={id !== 'new' ? id : undefined}
+                onExportImage={exportImage}
+                onExportPDF={exportPDF}
+              />
             </div>
           </div>
         )}

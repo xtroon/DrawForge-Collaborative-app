@@ -2,25 +2,14 @@ import { useState } from "react";
 import { FiShare  } from "react-icons/fi";
 
 
-type User = {
-  id: number;
-  name: string;
-};
-
-const users: User[] = [
-  { id: 1, name: "Om" },
-  { id: 2, name: "Rahul" },
-  { id: 3, name: "Aman" },
-  { id: 4, name: "Priya" },
-];
-
 type OnlineProps = {
   zoom: number;
   setZoom: (z: number) => void;
   onShareClick: () => void;
+  liveUsers?: Array<{ socketId: string, user: { name: string } }>;
 };
 
-export default function Online({ zoom, setZoom, onShareClick }: OnlineProps) {
+export default function Online({ zoom, setZoom, onShareClick, liveUsers = [] }: OnlineProps) {
   const [showUsers, setShowUsers] = useState(false);
 
   const handleZoomIn = () => setZoom(Math.min(zoom + 10, 300));
@@ -34,21 +23,22 @@ export default function Online({ zoom, setZoom, onShareClick }: OnlineProps) {
           onClick={() => setShowUsers(!showUsers)}
           className="flex cursor-pointer"
         >
-          {users.slice(0, 3).map((user, index) => (
+          {liveUsers.slice(0, 3).map((u, index) => (
             <div
-              key={user.id}
+              key={u.socketId}
               className={`w-10 h-10 rounded-full border-2 border-[#2B2B2A] text-[#2B2B2A] flex items-center justify-center font-doodle font-bold text-xl ${
                 index !== 0 ? "-ml-3" : ""
               }`}
               style={{ backgroundColor: ['#FF6B6B', '#4FC1CF', '#FFC53D', '#9B7EDE'][index % 4] }}
+              title={u.user.name}
             >
-              {user.name[0]}
+              {u.user.name[0]?.toUpperCase() || '?'}
             </div>
           ))}
 
-          {users.length > 3 && (
+          {liveUsers.length > 3 && (
             <div className="-ml-3 w-10 h-10 rounded-full bg-[#E5E1D8] border-2 border-[#2B2B2A] flex items-center justify-center font-doodle font-bold text-lg text-[#2B2B2A]">
-              +{users.length - 3}
+              +{liveUsers.length - 3}
             </div>
           )}
         </div>
@@ -58,16 +48,20 @@ export default function Online({ zoom, setZoom, onShareClick }: OnlineProps) {
           <div className="absolute right-0 mt-3 w-52 bg-white border-2 border-[#2B2B2A] shadow-[4px_4px_0_#FF6B6B] p-3 doodle-card wobble-2">
             <p className="font-doodle font-bold text-2xl mb-2 text-[#2B2B2A] border-b-2 border-dashed border-[#2B2B2A]/30 pb-2">Online Users</p>
 
-            {users.map((user, index) => (
-              <div key={user.id} className="flex items-center gap-3 py-2">
+            {liveUsers.length === 0 && (
+              <p className="text-sm font-bold text-[#5b5b58] italic py-2">Just you for now</p>
+            )}
+
+            {liveUsers.map((u, index) => (
+              <div key={u.socketId} className="flex items-center gap-3 py-2">
                 <div 
                   className="w-8 h-8 rounded-full border-2 border-[#2B2B2A] text-[#2B2B2A] flex items-center justify-center font-doodle font-bold text-lg"
                   style={{ backgroundColor: ['#FF6B6B', '#4FC1CF', '#FFC53D', '#9B7EDE'][index % 4] }}
                 >
-                  {user.name[0]}
+                  {u.user.name[0]?.toUpperCase() || '?'}
                 </div>
 
-                <span className="font-bold text-[#2B2B2A] text-lg">{user.name}</span>
+                <span className="font-bold text-[#2B2B2A] text-lg truncate" title={u.user.name}>{u.user.name}</span>
               </div>
             ))}
           </div>
