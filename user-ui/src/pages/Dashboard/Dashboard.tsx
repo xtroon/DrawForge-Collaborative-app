@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import axios from "axios";
 import {
   PenTool,
   Search,
@@ -46,14 +48,11 @@ const NAV_ITEMS = [
   { id: "trash", label: "Trash", icon: Trash2 },
 ];
 
-const PROJECTS = [
-  { id: 1, name: "Q3 Roadmap Sketch", color: "#FF6B6B", edited: "2 hours ago", collaborators: 3, pattern: "grid" },
-  { id: 2, name: "Onboarding Flow v2", color: "#4FC1CF", edited: "Yesterday", collaborators: 5, pattern: "scribble" },
-  { id: 3, name: "Brand Moodboard", color: "#FFC53D", edited: "3 days ago", collaborators: 2, pattern: "dots" },
-  { id: 4, name: "Team Retro — June", color: "#9B7EDE", edited: "1 week ago", collaborators: 6, pattern: "grid" },
-  { id: 5, name: "App Wireframes", color: "#FF6B6B", edited: "1 week ago", collaborators: 1, pattern: "scribble" },
-  { id: 6, name: "Untitled Board", color: "#4FC1CF", edited: "2 weeks ago", collaborators: 1, pattern: "dots" },
-];
+const patterns = ["grid", "scribble", "dots"];
+const colors = ["#FF6B6B", "#4FC1CF", "#FFC53D", "#9B7EDE"];
+
+const getPattern = (id: string) => patterns[id.charCodeAt(0) % patterns.length];
+const getColor = (id: string) => colors[id.charCodeAt(id.length - 1) % colors.length];
 
 function ThumbnailPattern({ pattern, color }: { pattern: string; color: string }) {
   if (pattern === "grid") {
@@ -108,10 +107,109 @@ function Avatar({ i }: { i: number }) {
 export default function Dashboard() {
   const [active, setActive] = useState("boards");
   const [roomCode, setRoomCode] = useState("");
+  const [boards, setBoards] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameTitle, setRenameTitle] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showProfilePopup, setShowProfilePopup] = useState(false);
   const navigate = useNavigate();
+  const { user, logout, updateUser } = useAuth();
+  const [editUserName, setEditUserName] = useState(user?.name || "");
+
+  useEffect(() => {
+    if (user && editUserName === "") {
+      setEditUserName(user.name);
+    }
+  }, [user]);
+
+  const handleRenameUser = () => {
+    if (!editUserName.trim() || !user) return;
+    axios.put(`http://localhost:5000/api/users/${user.id}`, { name: editUserName })
+      .then(res => {
+        updateUser({ ...user, name: res.data.name });
+        setShowProfilePopup(false);
+      })
+      .catch(err => console.error("Failed to rename user", err));
+  };
+
+  const toggleStar = (e: React.MouseEvent, id: string, currentStarred: boolean) => {
+    e.stopPropagation();
+    axios.put(`http://localhost:5000/api/boards/${id}/star`, { isStarred: !currentStarred })
+      .then(res => {
+        setBoards(boards.map(b => b._id === id ? { ...b, isStarred: !currentStarred } : b));
+      })
+      .catch(err => console.error("Failed to toggle star", err));
+  };
+
+  const toggleTrash = (id: string, currentTrashed: boolean) => {
+    axios.put(`http://localhost:5000/api/boards/${id}/trash`, { isTrashed: !currentTrashed })
+      .then(res => {
+        setBoards(boards.map(b => b._id === id ? { ...b, isTrashed: !currentTrashed } : b));
+        setOpenDropdownId(null);
+      })
+      .catch(err => console.error("Failed to toggle trash", err));
+  };
+
+  const renameBoard = (id: string, newTitle: string) => {
+    if (!newTitle.trim()) {
+      setRenamingId(null);
+      return;
+    }
+    axios.put(`http://localhost:5000/api/boards/${id}/title`, { title: newTitle })
+      .then(() => {
+        setBoards(boards.map(b => b._id === id ? { ...b, title: newTitle } : b));
+        setRenamingId(null);
+      })
+      .catch(err => console.error("Failed to rename board", err));
+  };
+
+  const deleteBoard = (id: string) => {
+    axios.delete(`http://localhost:5000/api/boards/${id}`)
+      .then(() => {
+        setBoards(boards.filter(b => b._id !== id));
+        setOpenDropdownId(null);
+      })
+      .catch(err => console.error("Failed to delete board", err));
+  };
+
+  useEffect(() => {
+    if (user) {
+      axios.get(`http://localhost:5000/api/boards/user/${user.id}`)
+        .then(res => {
+          setBoards(res.data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to fetch boards", err);
+          setLoading(false);
+        });
+    }
+  }, [user]);
+
+  const filteredBoards = boards.filter(b => {
+    if (searchQuery && !b.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    if (active === "boards") return !b.isTrashed;
+    if (active === "recent") return !b.isTrashed;
+    if (active === "starred") return !b.isTrashed && b.isStarred;
+    if (active === "trash") return b.isTrashed;
+    return true;
+  }).sort((a, b) => {
+    if (active === "recent") {
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    }
+    return 0;
+  });
 
   return (
     <div
+      onClick={() => {
+        setOpenDropdownId(null);
+        setShowProfilePopup(false);
+      }}
       className="min-h-screen text-[#2B2B2A] selection:bg-[#FFC53D]/50"
       style={{
         fontFamily: "'Patrick Hand', cursive",
@@ -169,15 +267,62 @@ export default function Dashboard() {
             })}
           </nav>
 
-          <div className="mt-auto flex items-center gap-3 pt-6 border-t-2 border-dashed border-[#2B2B2A]/20">
-            <div className="w-10 h-10 rounded-full bg-[#4FC1CF] border-2 border-[#2B2B2A] flex items-center justify-center font-doodle font-bold text-lg">
-              A
+          <div className="mt-auto relative pt-6 border-t-2 border-dashed border-[#2B2B2A]/20">
+            <div 
+              className="flex items-center gap-3 cursor-pointer hover:bg-[#2B2B2A]/5 p-2 -mx-2 rounded-xl transition-colors"
+              onClick={(e) => { e.stopPropagation(); setShowProfilePopup(!showProfilePopup); }}
+            >
+              {user?.picture ? (
+                <img src={user.picture} alt="Profile" className="w-10 h-10 rounded-full border-2 border-[#2B2B2A]" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-[#4FC1CF] border-2 border-[#2B2B2A] flex items-center justify-center font-doodle font-bold text-lg">
+                  {user?.name?.[0]?.toUpperCase() || 'U'}
+                </div>
+              )}
+              <div className="flex-1 overflow-hidden">
+                <p className="font-bold leading-none truncate">{user?.name || 'User'}</p>
+                <p className="text-sm text-[#8a8a86]">Free plan</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="font-bold leading-none">Alex Rivera</p>
-              <p className="text-sm text-[#8a8a86]">Free plan</p>
-            </div>
-            <Settings size={18} className="text-[#8a8a86] hover:text-[#2B2B2A] cursor-pointer" />
+
+            {showProfilePopup && (
+              <div 
+                onClick={(e) => e.stopPropagation()}
+                className="absolute bottom-20 left-0 w-64 bg-white border-2 border-[#2B2B2A] shadow-[4px_4px_0_#2B2B2A] rounded-2xl p-4 z-50 flex flex-col gap-4"
+              >
+                <div>
+                  <label className="text-xs font-bold text-[#8a8a86] mb-1 block">Account details</label>
+                  <p className="text-sm font-bold text-[#2B2B2A] truncate">{user?.email}</p>
+                </div>
+                
+                <div>
+                  <label className="text-xs font-bold text-[#8a8a86] mb-1 block">Your name</label>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      value={editUserName}
+                      onChange={(e) => setEditUserName(e.target.value)}
+                      className="border-2 border-[#2B2B2A] rounded-lg px-2 py-1 outline-none text-sm w-full font-bold bg-[#f4f4f0] focus:bg-white"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRenameUser();
+                      }}
+                    />
+                    <button 
+                      onClick={handleRenameUser}
+                      className="p-1.5 bg-[#4FC1CF] text-white rounded-lg border-2 border-[#2B2B2A] hover:bg-[#2B2B2A] transition-colors"
+                    >
+                      <PenTool size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={logout} 
+                  className="w-full mt-2 flex items-center justify-center gap-2 text-[#FF6B6B] hover:text-white hover:bg-[#FF6B6B] border-2 border-transparent hover:border-[#2B2B2A] p-2 rounded-xl transition-all font-bold"
+                >
+                  <DoorOpen size={18} /> Sign out
+                </button>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -189,129 +334,214 @@ export default function Dashboard() {
               <h1 className="font-doodle text-4xl md:text-5xl font-bold">
                 Good morning,{" "}
                 <span className="relative inline-block">
-                  Alex.
+                  {user?.name?.split(' ')[0] || 'Creator'}.
                   <Squiggle color="#FFC53D" className="absolute left-0 -bottom-1 w-full h-3" />
                 </span>
               </h1>
-              <p className="text-[#5b5b58] text-lg mt-1">You've got 6 boards waiting for you.</p>
+              <p className="text-[#5b5b58] text-lg mt-1">You've got {boards.length} boards waiting for you.</p>
             </div>
 
             <div className="relative w-full sm:w-72">
               <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8a8a86]" />
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search boards..."
                 className="w-full border-2 border-[#2B2B2A] doodle-input bg-white pl-11 pr-4 py-2.5 text-lg outline-none focus:shadow-[3px_3px_0_#4FC1CF] transition-shadow placeholder:text-[#b5b2a8]"
               />
             </div>
           </div>
 
-          {/* Quick actions */}
-          <div className="grid sm:grid-cols-3 gap-6 mb-12">
-            <Link to="/board/new" className="relative doodle-card wobble-1 bg-white border-2 border-[#2B2B2A] shadow-[5px_5px_0_#FF6B6B] p-6 text-left hover:-translate-y-0.5 transition-transform block">
-              <div className="w-12 h-12 rounded-full bg-[#FF6B6B]/20 border-2 border-[#2B2B2A] flex items-center justify-center mb-4">
-                <Plus size={22} />
+          {/* Quick actions & Room */}
+          <div className="grid lg:grid-cols-2 gap-8 mb-14 mt-4">
+            <Link to="/board/new" className="relative doodle-card wobble-1 bg-white border-2 border-[#2B2B2A] shadow-[6px_6px_0_#FF6B6B] p-8 text-left hover:-translate-y-1 transition-transform block">
+              <div className="w-14 h-14 rounded-full bg-[#FF6B6B]/20 border-2 border-[#2B2B2A] flex items-center justify-center mb-6">
+                <Plus size={24} />
               </div>
-              <h3 className="font-doodle text-2xl font-bold mb-1">Blank board</h3>
-              <p className="text-[#5b5b58]">Start from a fresh canvas.</p>
+              <h3 className="font-doodle text-3xl font-bold mb-2">Blank board</h3>
+              <p className="text-[#5b5b58] text-lg max-w-sm">Start from a fresh canvas and let your imagination run wild.</p>
             </Link>
 
-            <button className="relative doodle-card wobble-2 bg-white border-2 border-[#2B2B2A] shadow-[5px_5px_0_#4FC1CF] p-6 text-left hover:-translate-y-0.5 transition-transform">
-              <div className="w-12 h-12 rounded-full bg-[#4FC1CF]/20 border-2 border-[#2B2B2A] flex items-center justify-center mb-4">
-                <Grid3x3 size={20} />
-              </div>
-              <h3 className="font-doodle text-2xl font-bold mb-1">From a template</h3>
-              <p className="text-[#5b5b58]">Retros, roadmaps, mind maps.</p>
-            </button>
-
-            <button className="relative doodle-card wobble-3 bg-white border-2 border-[#2B2B2A] shadow-[5px_5px_0_#FFC53D] p-6 text-left hover:-translate-y-0.5 transition-transform">
-              <div className="w-12 h-12 rounded-full bg-[#FFC53D]/20 border-2 border-[#2B2B2A] flex items-center justify-center mb-4">
-                <Users size={20} />
-              </div>
-              <h3 className="font-doodle text-2xl font-bold mb-1">Import a file</h3>
-              <p className="text-[#5b5b58]">Bring in Figma or images.</p>
-            </button>
-          </div>
-
-          {/* Create / Join a room */}
-          <div className="relative doodle-card bg-white border-2 border-[#2B2B2A] shadow-[6px_6px_0_#9B7EDE] p-8 mb-14">
-            <Pin color="#9B7EDE" />
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex items-start gap-4">
-                <div className="w-14 h-14 rounded-full bg-[#9B7EDE]/20 border-2 border-[#2B2B2A] flex items-center justify-center shrink-0">
-                  <DoorOpen size={24} />
+            <div className="relative doodle-card bg-white border-2 border-[#2B2B2A] shadow-[6px_6px_0_#9B7EDE] p-8">
+              <Pin color="#9B7EDE" />
+              <div className="flex flex-col h-full justify-between gap-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-full bg-[#9B7EDE]/20 border-2 border-[#2B2B2A] flex items-center justify-center shrink-0">
+                    <DoorOpen size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-doodle text-3xl font-bold mb-1">Create a room</h3>
+                    <p className="text-[#5b5b58]">
+                      Spin up a live session and get a shareable code — perfect for a quick jam with the team.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-doodle text-3xl font-bold mb-1">Create a room</h3>
-                  <p className="text-[#5b5b58] max-w-md">
-                    Spin up a live session and get a shareable code — perfect for a quick jam with the team.
-                  </p>
-                </div>
-              </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-                <Link to="/board/new" className="doodle-btn flex items-center justify-center gap-2 bg-[#9B7EDE] text-[#2B2B2A] px-6 py-3 border-2 border-[#2B2B2A] font-doodle font-bold text-xl shadow-[3px_3px_0_#2B2B2A] hover:shadow-[1px_1px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
-                  <Plus size={18} />
-                  Create room
-                </Link>
-                <div className="flex border-2 border-[#2B2B2A] doodle-input bg-white overflow-hidden">
-                  <input
-                    value={roomCode}
-                    onChange={(e) => setRoomCode(e.target.value)}
-                    placeholder="Enter code"
-                    className="w-32 px-4 py-3 text-lg outline-none placeholder:text-[#b5b2a8] bg-transparent"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && roomCode.trim()) {
-                        navigate(`/board/${roomCode.trim()}`);
-                      }
-                    }}
-                  />
-                  <button 
-                    onClick={() => roomCode.trim() && navigate(`/board/${roomCode.trim()}`)}
-                    className="px-4 font-doodle font-bold text-lg text-[#2B2B2A] hover:text-[#9B7EDE] shrink-0"
-                  >
-                    Join
-                  </button>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link to="/board/new" className="doodle-btn flex items-center justify-center gap-2 bg-[#9B7EDE] text-[#2B2B2A] px-6 py-3 border-2 border-[#2B2B2A] font-doodle font-bold text-xl shadow-[3px_3px_0_#2B2B2A] hover:shadow-[1px_1px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] transition-all shrink-0">
+                    <Plus size={18} />
+                    Create room
+                  </Link>
+                  <div className="flex flex-1 border-2 border-[#2B2B2A] doodle-input bg-white overflow-hidden">
+                    <input
+                      value={roomCode}
+                      onChange={(e) => setRoomCode(e.target.value)}
+                      placeholder="Enter code"
+                      className="w-full px-4 py-3 text-lg outline-none placeholder:text-[#b5b2a8] bg-transparent min-w-[100px]"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && roomCode.trim()) {
+                          navigate(`/board/${roomCode.trim()}`);
+                        }
+                      }}
+                    />
+                    <button 
+                      onClick={() => roomCode.trim() && navigate(`/board/${roomCode.trim()}`)}
+                      className="px-4 font-doodle font-bold text-lg text-[#2B2B2A] hover:bg-[#2B2B2A]/5 shrink-0 border-l-2 border-[#2B2B2A] transition-colors"
+                    >
+                      Join
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Recent projects */}
+          {/* Board list header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="font-doodle text-3xl font-bold">Recent projects</h2>
+            <h2 className="font-doodle text-3xl font-bold capitalize">{active === 'boards' ? 'My Boards' : active}</h2>
             <button className="text-[#5b5b58] hover:text-[#FF6B6B] underline decoration-dashed underline-offset-4">
               View all
             </button>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {PROJECTS.map((p) => (
-              <Link
-                key={p.id}
-                to={`/board/${p.id}`}
-                className="group bg-white border-2 border-[#2B2B2A] doodle-card p-4 hover:-translate-y-1 hover:shadow-[5px_5px_0_#2B2B2A] transition-all cursor-pointer block"
-              >
-                <div className="doodle-thumb overflow-hidden border-2 border-[#2B2B2A] mb-4 h-28">
-                  <ThumbnailPattern pattern={p.pattern} color={p.color} />
-                </div>
-                <div className="flex items-start justify-between gap-2 px-1">
-                  <div>
-                    <h3 className="font-doodle text-2xl font-bold leading-tight">{p.name}</h3>
-                    <p className="text-sm text-[#8a8a86]">Edited {p.edited}</p>
+            {loading ? (
+              <div className="col-span-full py-12 text-center text-[#8a8a86] font-doodle text-2xl">
+                Loading your masterpieces...
+              </div>
+            ) : filteredBoards.length === 0 ? (
+              <div className="col-span-full py-12 text-center text-[#8a8a86] font-doodle text-2xl">
+                No boards found here.
+              </div>
+            ) : (
+              filteredBoards.map((b) => (
+                <div
+                  key={b._id}
+                  className="group bg-white border-2 border-[#2B2B2A] doodle-card p-4 hover:-translate-y-1 hover:shadow-[5px_5px_0_#2B2B2A] transition-all block relative"
+                >
+                  <div 
+                    onClick={() => navigate(`/board/${b._id}`)}
+                    className="cursor-pointer"
+                  >
+                    <div className="doodle-thumb overflow-hidden border-2 border-[#2B2B2A] mb-4 h-28">
+                      <ThumbnailPattern pattern={getPattern(b._id)} color={getColor(b._id)} />
+                    </div>
+                    <div className="flex items-start justify-between gap-2 px-1">
+                      <div className="w-full mr-2">
+                        {renamingId === b._id ? (
+                          <input
+                            autoFocus
+                            value={renameTitle}
+                            onChange={(e) => setRenameTitle(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            onBlur={() => renameBoard(b._id, renameTitle)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.stopPropagation();
+                                renameBoard(b._id, renameTitle);
+                              }
+                              if (e.key === 'Escape') {
+                                e.stopPropagation();
+                                setRenamingId(null);
+                              }
+                            }}
+                            className="font-doodle text-2xl font-bold leading-tight truncate border-b-2 border-[#2B2B2A] bg-transparent outline-none w-full mb-1"
+                          />
+                        ) : (
+                          <h3 className="font-doodle text-2xl font-bold leading-tight truncate mb-1">{b.title}</h3>
+                        )}
+                        <p className="text-sm text-[#8a8a86]">Edited {new Date(b.updatedAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center mt-3 px-1">
+                      <Avatar i={0} />
+                    </div>
                   </div>
-                  <MoreHorizontal size={18} className="text-[#8a8a86] hover:text-[#2B2B2A] shrink-0 mt-1" />
+                  
+                  {/* Star Button */}
+                  <button 
+                    onClick={(e) => toggleStar(e, b._id, b.isStarred)}
+                    className={`absolute top-6 right-6 z-10 w-8 h-8 rounded-full border-2 border-[#2B2B2A] flex items-center justify-center transition-colors ${b.isStarred ? 'bg-[#FFC53D] shadow-[2px_2px_0_#2B2B2A]' : 'bg-white hover:bg-[#f4f4f0]'}`}
+                  >
+                    <Star size={14} className={b.isStarred ? 'fill-[#2B2B2A] text-[#2B2B2A]' : 'text-[#8a8a86]'} />
+                  </button>
+                  
+                  {/* 3 dots menu */}
+                  <div className="absolute right-4 top-[152px] z-10">
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setOpenDropdownId(openDropdownId === b._id ? null : b._id);
+                      }}
+                      className="p-1 hover:bg-[#2B2B2A]/5 rounded-md transition-colors"
+                    >
+                      <MoreHorizontal size={18} className="text-[#8a8a86] hover:text-[#2B2B2A]" />
+                    </button>
+                    {openDropdownId === b._id && (
+                      <div className="absolute right-0 mt-1 w-44 bg-white border-2 border-[#2B2B2A] shadow-[3px_3px_0_#2B2B2A] rounded-xl overflow-hidden z-20">
+                        {active !== "trash" && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRenamingId(b._id);
+                              setRenameTitle(b.title);
+                              setOpenDropdownId(null);
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-[#FFC53D] hover:text-[#2B2B2A] transition-colors font-bold text-sm flex items-center gap-2"
+                          >
+                            <PenTool size={16} /> Rename
+                          </button>
+                        )}
+                        
+                        {active === "trash" ? (
+                          <>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleTrash(b._id, true);
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-[#4FC1CF] hover:text-white transition-colors font-bold text-sm flex items-center gap-2"
+                            >
+                              <DoorOpen size={16} /> Restore
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteBoard(b._id);
+                              }}
+                              className="w-full text-left px-4 py-2 hover:bg-[#FF6B6B] hover:text-white transition-colors font-bold text-sm flex items-center gap-2"
+                            >
+                              <Trash2 size={16} /> Delete Forever
+                            </button>
+                          </>
+                        ) : (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleTrash(b._id, false);
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-[#FF6B6B] hover:text-white transition-colors font-bold text-sm flex items-center gap-2"
+                          >
+                            <Trash2 size={16} /> Move to Trash
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center mt-3 px-1">
-                  {[...Array(Math.min(p.collaborators, 4))].map((_, i) => (
-                    <Avatar key={i} i={i} />
-                  ))}
-                  {p.collaborators > 4 && (
-                    <span className="text-sm text-[#8a8a86] ml-2">+{p.collaborators - 4}</span>
-                  )}
-                </div>
-              </Link>
-            ))}
+              ))
+            )}
           </div>
         </main>
       </div>

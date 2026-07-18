@@ -2,36 +2,22 @@ import Landing from "./pages/Landing/Landing"
 import Login from "./pages/Auth/Auth"
 import Dashboard from "./pages/Dashboard/Dashboard"
 import Workspace from "./pages/Workspace/Workspace"
-import { Routes, Route } from "react-router-dom"
-import { useUser } from "@clerk/clerk-react"
-import { useEffect } from "react"
-import axios from "axios"
+import { Routes, Route, Navigate } from "react-router-dom"
+import { useAuth } from "./contexts/AuthContext"
 
 function App() {
-  const { user, isSignedIn } = useUser()
+  const { isAuthenticated, isLoaded } = useAuth()
 
-  useEffect(() => {
-    if (isSignedIn && user) {
-      // Sync Clerk user with our backend
-      axios.post("http://localhost:5000/api/auth/clerk-login", {
-        clerkId: user.id,
-        email: user.primaryEmailAddress?.emailAddress,
-        name: user.fullName,
-        picture: user.imageUrl
-      }).then(res => {
-        console.log("User synced with backend:", res.data)
-      }).catch(err => {
-        console.error("Failed to sync user with backend", err)
-      })
-    }
-  }, [isSignedIn, user])
+  if (!isLoaded) {
+    return <div className="min-h-screen flex items-center justify-center bg-[#FFFDF6]">Loading...</div>
+  }
 
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/auth" element={<Login />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/board/:id" element={<Workspace />} />
+      <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Landing />} />
+      <Route path="/auth" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
+      <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/auth" />} />
+      <Route path="/board/:id" element={isAuthenticated ? <Workspace /> : <Navigate to="/auth" />} />
     </Routes>
   )
 }

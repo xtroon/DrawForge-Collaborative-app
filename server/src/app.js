@@ -9,8 +9,10 @@ app.use(express.json());
 
 const boardRoutes = require('./routes/board.route');
 const authRoutes = require('./routes/auth.route');
+const userRoutes = require('./routes/user.route');
 
 app.use('/api/boards', boardRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 module.exports = app;

@@ -8,10 +8,11 @@ import {
   MdClose,
 } from "react-icons/md";
 import Share from "../../components/Share";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import type { Shape } from "../../features/types";
+import { useAuth } from "../../contexts/AuthContext";
 
 function Workspace() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +26,13 @@ function Workspace() {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(false);
   const [showSharePopup, setShowSharePopup] = useState(false);
+  const [boardTitle, setBoardTitle] = useState("Untitled Board");
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [tempTitle, setTempTitle] = useState("Untitled Board");
+  const [boardOwnerId, setBoardOwnerId] = useState("");
+  
+  const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [history, setHistory] = useState<Shape[][]>([[]]);
@@ -33,19 +41,44 @@ function Workspace() {
   const appRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(zoom);
   const panRef = useRef(pan);
+  const isCreatingRef = useRef(false);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !user) return;
+    
+    if (id === "new") {
+      if (isCreatingRef.current) return;
+      isCreatingRef.current = true;
+      axios.post("http://localhost:5000/api/boards", { title: "Untitled Board", owner: user.id })
+        .then(res => {
+          navigate(`/board/${res.data._id}`, { replace: true });
+        })
+        .catch(err => {
+          console.error("Failed to create new board:", err);
+          isCreatingRef.current = false;
+        });
+      return;
+    }
+
     axios.get(`http://localhost:5000/api/boards/${id}`)
       .then(res => {
-        if (res.data && res.data.shapes) {
-          setShapes(res.data.shapes);
-          setHistory([res.data.shapes]);
-          setHistoryStep(0);
+        if (res.data) {
+          if (res.data.title) {
+            setBoardTitle(res.data.title);
+            setTempTitle(res.data.title);
+          }
+          if (res.data.owner) {
+            setBoardOwnerId(res.data.owner);
+          }
+          if (res.data.shapes) {
+            setShapes(res.data.shapes);
+            setHistory([res.data.shapes]);
+            setHistoryStep(0);
+          }
         }
       })
       .catch(err => console.error("Failed to load board:", err));
-  }, [id]);
+  }, [id, user, navigate]);
 
   const commitShapes = (newShapes: Shape[]) => {
     const newHistory = history.slice(0, historyStep + 1);
@@ -56,6 +89,19 @@ function Workspace() {
     if (id) {
       axios.put(`http://localhost:5000/api/boards/${id}/shapes`, { shapes: newShapes })
         .catch(err => console.error("Failed to save shapes:", err));
+    }
+  };
+
+  const handleTitleSave = () => {
+    setIsEditingTitle(false);
+    if (tempTitle.trim() === "" || tempTitle === boardTitle) {
+      setTempTitle(boardTitle);
+      return;
+    }
+    setBoardTitle(tempTitle);
+    if (id && id !== "new") {
+      axios.put(`http://localhost:5000/api/boards/${id}/title`, { title: tempTitle })
+        .catch(err => console.error("Failed to update title:", err));
     }
   };
 
@@ -130,6 +176,8 @@ function Workspace() {
     }
   };
 
+  const isAdmin = user && user.id === boardOwnerId;
+
   return (
     <>
       <div 
@@ -180,13 +228,45 @@ function Workspace() {
         {/* current online users  */}
         <Online zoom={zoom} setZoom={setZoom} onShareClick={() => setShowSharePopup(true)} />
 
-        {/* back to dashboard button */}
-        <Link 
-          to="/dashboard"
-          className="fixed top-6 left-6 doodle-btn border-2 border-[#2B2B2A] bg-white text-[#2B2B2A] p-2 hover:bg-[#FFC53D] transition-colors shadow-[3px_3px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_#2B2B2A] z-50 flex items-center justify-center"
-        >
-          <MdKeyboardBackspace size={24} />
-        </Link>
+        {/* top-left controls */}
+        <div className="fixed top-6 left-6 z-50 flex items-center gap-4">
+          <Link 
+            to="/dashboard"
+            className="doodle-btn border-2 border-[#2B2B2A] bg-white text-[#2B2B2A] p-2 hover:bg-[#FFC53D] transition-colors shadow-[3px_3px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_#2B2B2A] flex items-center justify-center"
+          >
+            <MdKeyboardBackspace size={24} />
+          </Link>
+          <div className="flex flex-col gap-1">
+            {isEditingTitle ? (
+              <input
+                autoFocus
+                value={tempTitle}
+                onChange={(e) => setTempTitle(e.target.value)}
+                onBlur={handleTitleSave}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleTitleSave();
+                  if (e.key === 'Escape') {
+                    setTempTitle(boardTitle);
+                    setIsEditingTitle(false);
+                  }
+                }}
+                className="bg-white border-2 border-[#2B2B2A] shadow-[3px_3px_0_#2B2B2A] px-4 py-1.5 doodle-btn font-doodle text-xl font-bold text-[#2B2B2A] w-[200px] outline-none focus:shadow-[1px_1px_0_#4FC1CF]"
+              />
+            ) : (
+              <div 
+                onClick={() => { 
+                  if (isAdmin) {
+                    setIsEditingTitle(true); setTempTitle(boardTitle); 
+                  }
+                }}
+                className={`bg-white border-2 border-[#2B2B2A] shadow-[3px_3px_0_#2B2B2A] px-4 py-1.5 doodle-btn font-doodle text-xl font-bold text-[#2B2B2A] truncate max-w-[200px] ${isAdmin ? 'cursor-pointer hover:bg-[#E5E1D8]' : ''} transition-colors`}
+                title={isAdmin ? "Click to edit" : ""}
+              >
+                {boardTitle}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* full screen button */}
         <button

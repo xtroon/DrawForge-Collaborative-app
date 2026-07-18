@@ -14,6 +14,14 @@ const boardSchema = new mongoose.Schema({
   shapes: {
     type: [shapeSchema],
     default: []
+  },
+  isStarred: {
+    type: Boolean,
+    default: false
+  },
+  isTrashed: {
+    type: Boolean,
+    default: false
   }
 }, { timestamps: true });
 
