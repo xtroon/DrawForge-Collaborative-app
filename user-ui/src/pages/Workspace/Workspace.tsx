@@ -8,11 +8,12 @@ import {
   MdClose,
 } from "react-icons/md";
 import Share from "../../components/Share";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import type { Shape } from "../../features/types";
 import { jsPDF } from "jspdf";
 import { useAuth } from "../../contexts/AuthContext";
+import axios from "axios";
 
 function Workspace() {
   const { id } = useParams<{ id: string }>();
@@ -31,7 +32,6 @@ function Workspace() {
   const [tempTitle, setTempTitle] = useState("");
   
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [history, setHistory] = useState<Shape[][]>([[]]);
   const [historyStep, setHistoryStep] = useState(0);
@@ -42,25 +42,75 @@ function Workspace() {
   
   const [cursors] = useState<Record<string, { x: number; y: number; user: { name: string } }>>({});
 
+  const { user } = useAuth();
+  
   useEffect(() => {
-    if (!id || id === "new") return;
-    setBoardTitle("Local Board");
-  }, [id, navigate]);
+    if (!id) return;
+    if (id === "new") {
+      const createNewBoard = async () => {
+        if (!user) return; // Need user to create board
+        try {
+          const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/boards`, {
+            title: "Untitled Board",
+            owner: user.id
+          });
+          navigate(`/board/${res.data._id}`, { replace: true });
+        } catch (err) {
+          console.error("Failed to create new board", err);
+        }
+      };
+      createNewBoard();
+    } else {
+      const fetchBoard = async () => {
+        try {
+          const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/boards/${id}`);
+          setBoardTitle(res.data.title);
+          if (res.data.shapes && res.data.shapes.length > 0) {
+            setShapes(res.data.shapes);
+            setHistory([[], res.data.shapes]);
+            setHistoryStep(1);
+          }
+        } catch (err) {
+          console.error("Failed to fetch board", err);
+        }
+      };
+      fetchBoard();
+    }
+  }, [id, navigate, user]);
 
   const commitShapes = (newShapes: Shape[]) => {
     const newHistory = history.slice(0, historyStep + 1);
     newHistory.push(newShapes);
     setHistory(newHistory);
     setHistoryStep(newHistory.length - 1);
+    
+    // Save shapes to backend
+    if (id && id !== "new" && user) {
+      axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/boards/${id}`, {
+        shapes: newShapes,
+        userId: user.id
+      }).catch(err => console.error("Failed to save shapes", err));
+    }
   };
 
-  const handleTitleSave = () => {
+  const handleTitleSave = async () => {
     setIsEditingTitle(false);
     if (tempTitle.trim() === "" || tempTitle === boardTitle) {
       setTempTitle(boardTitle);
       return;
     }
     setBoardTitle(tempTitle);
+    
+    if (id && id !== "new" && user) {
+      try {
+        await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/boards/${id}`, {
+          title: tempTitle,
+          userId: user.id
+        });
+      } catch (err) {
+        console.error("Failed to save title", err);
+      }
+    }
   };
 
   const handleUndo = () => {

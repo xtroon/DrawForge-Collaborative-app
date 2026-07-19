@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   PenTool,
   Search,
@@ -101,8 +101,8 @@ function Avatar({ i }: { i: number }) {
 export default function Dashboard() {
   const [active, setActive] = useState("boards");
   const [roomCode, setRoomCode] = useState("");
-  const [boards] = useState<any[]>([]);
-  const loading = false;
+  const [boards, setBoards] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
@@ -116,7 +116,7 @@ export default function Dashboard() {
   const handleSaveName = async () => {
     if (!newName.trim() || !user || !token) return;
     try {
-      const res = await axios.put(`http://localhost:5000/api/users/${user.id}`, { name: newName.trim() });
+      const res = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/users/${user.id}`, { name: newName.trim() });
       if (res.data.success) {
         login(token, res.data.user);
         setIsEditingName(false);
@@ -126,11 +126,59 @@ export default function Dashboard() {
     }
   };
 
-  const filteredBoards = boards;
+  useEffect(() => {
+    if (!user) return;
+    const fetchBoards = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/boards/user/${user.id}`);
+        setBoards(res.data);
+      } catch (err) {
+        console.error("Failed to fetch boards", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBoards();
+  }, [user]);
 
-  const renameBoard = (_id: string, _title: string) => {};
-  const toggleStar = (_e: any, _id: string, _starred: boolean) => {};
-  const deleteBoard = (_id: string) => {};
+  const filteredBoards = (active === "starred" 
+    ? boards.filter(b => user && b.starredBy?.includes(user.id))
+    : boards
+  ).filter(b => b.title.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const renameBoard = async (_id: string, _title: string) => {
+    if (!_title.trim() || !user) {
+      setRenamingId(null);
+      return;
+    }
+    try {
+      const res = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/boards/${_id}`, { title: _title, userId: user.id });
+      setBoards(boards.map(b => b._id === _id ? res.data : b));
+      setRenamingId(null);
+    } catch (err) {
+      console.error("Failed to rename board", err);
+    }
+  };
+
+  const toggleStar = async (e: any, _id: string, _starred: boolean) => {
+    e.stopPropagation();
+    if (!user) return;
+    try {
+      const res = await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/boards/${_id}/star`, { userId: user.id });
+      setBoards(boards.map(b => b._id === _id ? res.data : b));
+    } catch (err) {
+      console.error("Failed to toggle star", err);
+    }
+  };
+
+  const deleteBoard = async (_id: string) => {
+    try {
+      await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/boards/${_id}`);
+      setBoards(boards.filter(b => b._id !== _id));
+    } catch (err) {
+      console.error("Failed to delete board", err);
+    }
+  };
   return (
     <div
       onClick={() => {

@@ -5,8 +5,9 @@ import Workspace from "./pages/Workspace/Workspace"
 import Auth from "./pages/Auth/Auth"
 import NotFound from "./pages/NotFound/Oops"
 import { useAuth } from "./contexts/AuthContext"
+import { ReactNode } from "react"
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated } = useAuth();
   
   if (!isAuthenticated) {
