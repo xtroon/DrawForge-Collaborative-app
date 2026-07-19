@@ -25,7 +25,7 @@ io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
   socket.on('join-room', (data) => {
-    // Check if data is string (old) or object (new)
+    // check if data is string (old) or object (new)
     const roomId = typeof data === 'string' ? data : data.roomId;
     const user = typeof data === 'object' ? data.user : { name: "Guest" };
     

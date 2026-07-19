@@ -23,15 +23,14 @@ function Workspace() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoom, setZoom] = useState(100);
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [showGrid, setShowGrid] = useState(false);
+  const [showGrid, setShowGrid] = useState(true);
   const [showSharePopup, setShowSharePopup] = useState(false);
   const [boardTitle, setBoardTitle] = useState("Untitled Board");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [tempTitle, setTempTitle] = useState("Untitled Board");
-  const [boardOwnerId, setBoardOwnerId] = useState("");
+  const [tempTitle, setTempTitle] = useState("");
   
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const user = { name: "Guest User" };
   
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [history, setHistory] = useState<Shape[][]>([[]]);
@@ -40,11 +39,8 @@ function Workspace() {
   const appRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef(zoom);
   const panRef = useRef(pan);
-  const isCreatingRef = useRef(false);
-  const lastEmitRef = useRef(0);
   
-  const [cursors, setCursors] = useState<Record<string, { x: number; y: number; user: { name: string } }>>({});
-  const [liveUsers, setLiveUsers] = useState<Array<{ socketId: string, user: { name: string } }>>([]);
+  const [cursors] = useState<Record<string, { x: number; y: number; user: { name: string } }>>({});
 
   useEffect(() => {
     if (!id || id === "new") return;
@@ -72,10 +68,6 @@ function Workspace() {
       const newStep = historyStep - 1;
       setHistoryStep(newStep);
       setShapes(history[newStep]);
-      if (id && id !== "new") {
-        socket.emit('update-shapes', { roomId: id, shapes: history[newStep] });
-        axios.put(`http://localhost:5000/api/boards/${id}/shapes`, { shapes: history[newStep], userId: user?.id }).catch(err => console.error(err));
-      }
     }
   };
 
@@ -84,10 +76,6 @@ function Workspace() {
       const newStep = historyStep + 1;
       setHistoryStep(newStep);
       setShapes(history[newStep]);
-      if (id && id !== "new") {
-        socket.emit('update-shapes', { roomId: id, shapes: history[newStep] });
-        axios.put(`http://localhost:5000/api/boards/${id}/shapes`, { shapes: history[newStep], userId: user?.id }).catch(err => console.error(err));
-      }
     }
   };
 
@@ -146,11 +134,6 @@ function Workspace() {
     }
   };
 
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    // Disabled in mock mode
-  };
-
   const exportImage = () => {
     const canvas = document.querySelector('canvas');
     if (!canvas) return;
@@ -179,7 +162,6 @@ function Workspace() {
       <div 
         ref={appRef} 
         className="min-h-screen relative overflow-hidden text-[#2B2B2A] selection:bg-[#FFC53D]/50"
-        onPointerMove={handlePointerMove}
         style={{
           fontFamily: "'Patrick Hand', cursive",
           backgroundColor: "#FFFDF6",

@@ -4,7 +4,6 @@ import {
   Search,
   Plus,
   LayoutGrid,
-  Clock,
   Star,
   Trash2,
   DoorOpen,
@@ -100,7 +99,7 @@ function Avatar({ i }: { i: number }) {
 export default function Dashboard() {
   const [active, setActive] = useState("boards");
   const [roomCode, setRoomCode] = useState("");
-  const [boards, setBoards] = useState<any[]>([]);
+  const [boards] = useState<any[]>([]);
   const loading = false;
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -111,6 +110,10 @@ export default function Dashboard() {
   
   const user = { name: "Guest User", picture: null, id: "guest" };
   const filteredBoards = boards;
+
+  const renameBoard = (id: string, title: string) => {};
+  const toggleStar = (e: any, id: string, starred: boolean) => {};
+  const deleteBoard = (id: string) => {};
   return (
     <div
       onClick={() => {
