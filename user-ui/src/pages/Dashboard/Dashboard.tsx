@@ -10,6 +10,8 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import axios from "axios";
 
 function Squiggle({ color = "#FF6B6B", className = "" }: { color?: string; className?: string }) {
   return (
@@ -106,9 +108,24 @@ export default function Dashboard() {
   const [renameTitle, setRenameTitle] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showProfilePopup, setShowProfilePopup] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState("");
   const navigate = useNavigate();
+  const { user, token, login, logout } = useAuth();
   
-  const user = { name: "Guest User", picture: null, id: "guest" };
+  const handleSaveName = async () => {
+    if (!newName.trim() || !user || !token) return;
+    try {
+      const res = await axios.put(`http://localhost:5000/api/users/${user.id}`, { name: newName.trim() });
+      if (res.data.success) {
+        login(token, res.data.user);
+        setIsEditingName(false);
+      }
+    } catch (err) {
+      console.error("Failed to update name", err);
+    }
+  };
+
   const filteredBoards = boards;
 
   const renameBoard = (_id: string, _title: string) => {};
@@ -182,13 +199,9 @@ export default function Dashboard() {
               className="flex items-center gap-3 cursor-pointer hover:bg-[#2B2B2A]/5 p-2 -mx-2 rounded-xl transition-colors"
               onClick={(e) => { e.stopPropagation(); setShowProfilePopup(!showProfilePopup); }}
             >
-              {user?.picture ? (
-                <img src={user.picture} alt="Profile" className="w-10 h-10 rounded-full border-2 border-[#2B2B2A]" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-[#4FC1CF] border-2 border-[#2B2B2A] flex items-center justify-center font-doodle font-bold text-lg">
-                  {user?.name?.[0]?.toUpperCase() || 'U'}
-                </div>
-              )}
+              <div className="w-10 h-10 rounded-full bg-[#4FC1CF] border-2 border-[#2B2B2A] flex items-center justify-center font-doodle font-bold text-lg shrink-0">
+                {user?.name?.[0]?.toUpperCase() || 'U'}
+              </div>
               <div className="flex-1 overflow-hidden">
                 <p className="font-bold leading-none truncate">{user?.name || 'User'}</p>
                 <p className="text-sm text-[#8a8a86]">Free plan</p>
@@ -200,6 +213,51 @@ export default function Dashboard() {
                 onClick={(e) => e.stopPropagation()}
                 className="absolute bottom-20 left-0 w-64 bg-white border-2 border-[#2B2B2A] shadow-[4px_4px_0_#2B2B2A] rounded-2xl p-4 z-50 flex flex-col gap-4"
               >
+                {isEditingName ? (
+                  <div className="flex flex-col gap-2 pb-2 border-b-2 border-[#2B2B2A]/10">
+                    <input 
+                      autoFocus
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      className="border-2 border-[#2B2B2A] rounded-md px-2 py-1 outline-none text-[#2B2B2A] text-lg font-bold w-full"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveName();
+                        if (e.key === 'Escape') setIsEditingName(false);
+                      }}
+                    />
+                    <div className="flex gap-2">
+                       <button onClick={handleSaveName} className="text-sm bg-[#4FC1CF] text-[#2B2B2A] px-3 py-1 rounded-xl border-2 border-[#2B2B2A] font-bold shadow-[2px_2px_0_#2B2B2A] hover:shadow-[1px_1px_0_#2B2B2A] hover:translate-x-[1px] hover:translate-y-[1px] transition-all">Save</button>
+                       <button onClick={() => setIsEditingName(false)} className="text-sm text-[#5b5b58] px-2 py-1 hover:text-[#FF6B6B] font-bold">Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="font-bold text-lg text-[#2B2B2A] pb-2 border-b-2 border-[#2B2B2A]/10">
+                    {user?.name || 'User'}
+                  </div>
+                )}
+                
+                {!isEditingName && (
+                  <button 
+                    onClick={() => {
+                      setNewName(user?.name || "");
+                      setIsEditingName(true);
+                    }}
+                    className="w-full text-left font-bold text-[#5b5b58] hover:text-[#4FC1CF] transition-colors"
+                  >
+                    Edit Name
+                  </button>
+                )}
+
+                <button 
+                  onClick={() => {
+                    logout();
+                    navigate('/login');
+                  }}
+                  className="w-full text-left font-bold text-[#FF6B6B] hover:text-[#2B2B2A] transition-colors"
+                >
+                  Log out
+                </button>
+
                 <button 
                   onClick={() => navigate('/board/new')}
                   className="w-full mt-2 flex items-center justify-center gap-2 text-[#FF6B6B] hover:text-white hover:bg-[#FF6B6B] border-2 border-transparent hover:border-[#2B2B2A] p-2 rounded-xl transition-all font-bold"

@@ -73,7 +73,7 @@ async function login(req, res) {
       email: email.toLowerCase(),
     }).select("+password");
 
-    if (!user) {
+    if (!user || !user.password) {
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",

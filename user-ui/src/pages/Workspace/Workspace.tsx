@@ -12,6 +12,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import type { Shape } from "../../features/types";
 import { jsPDF } from "jspdf";
+import { useAuth } from "../../contexts/AuthContext";
 
 function Workspace() {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +31,7 @@ function Workspace() {
   const [tempTitle, setTempTitle] = useState("");
   
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [history, setHistory] = useState<Shape[][]>([[]]);
   const [historyStep, setHistoryStep] = useState(0);
@@ -235,12 +237,12 @@ function Workspace() {
 
         {/* top-left controls */}
         <div className="fixed top-6 left-6 z-50 flex items-center gap-4">
-          <Link 
-            to="/dashboard"
+          <button 
+            onClick={() => navigate(-1)}
             className="doodle-btn border-2 border-[#2B2B2A] bg-white text-[#2B2B2A] p-2 hover:bg-[#FFC53D] transition-colors shadow-[3px_3px_0_#2B2B2A] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0_#2B2B2A] flex items-center justify-center"
           >
             <MdKeyboardBackspace size={24} />
-          </Link>
+          </button>
           <div className="flex flex-col gap-1">
             {isEditingTitle ? (
               <input

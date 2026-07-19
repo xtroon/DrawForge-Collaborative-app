@@ -1,33 +1,13 @@
-/**
- * This file handles all the real-time WebSocket connections for the application.
- * WebSockets allow us to send and receive data instantly between the server and the clients (users),
- * which is perfect for a live collaboration whiteboard!
- */
-
-// We keep track of which users are in which rooms using this object.
-// The keys will be the room IDs, and the values will be an array of user objects.
 const roomUsers = {};
 
-/**
- * Initializes the socket connection.
- * @param {import('socket.io').Server} io - The Socket.IO server instance.
- */
 function initSocket(io) {
-  // Listen for a new client connection
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
 
-    // ==========================================
-    // ROOM MANAGEMENT
-    // ==========================================
-
-    // When a user wants to join a specific whiteboard (room)
     socket.on('join-room', (data) => {
-      // Check if data is string (old format) or object (new format)
       const roomId = typeof data === 'string' ? data : data.roomId;
       const user = typeof data === 'object' ? data.user : { name: "Guest" };
       
-      // Make the socket join the specific room
       socket.join(roomId);
       
       // Initialize the room array if it doesn't exist yet
@@ -63,11 +43,6 @@ function initSocket(io) {
     });
 
 
-    // ==========================================
-    // WHITEBOARD DRAWING EVENTS
-    // ==========================================
-
-    // When a user draws a new single shape
     socket.on('draw-shape', (data) => {
       // data should contain { roomId, shape }
       // Broadcast this shape to everyone ELSE in the room
@@ -91,11 +66,6 @@ function initSocket(io) {
         user: data.user 
       });
     });
-
-
-    // ==========================================
-    // DISCONNECTION HANDLING
-    // ==========================================
 
     // 'disconnecting' is fired just before the socket leaves all its rooms
     socket.on('disconnecting', () => {

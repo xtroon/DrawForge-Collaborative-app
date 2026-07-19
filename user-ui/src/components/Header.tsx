@@ -21,10 +21,10 @@ export const Header = () => {
             <a href="#how-to-use" className="hover:text-[#FF6B6B] transition-colors">How to Use</a>
           </nav>
           <div className="flex items-center gap-4">
-            <Link to="/auth" className="text-lg hover:text-[#FF6B6B] transition-colors">
+            <Link to="/login" className="text-lg hover:text-[#FF6B6B] transition-colors">
               Log in
             </Link>
-            <Link to="/auth" className="doodle-btn text-lg font-bold bg-[#2B2B2A] text-[#FFFDF6] px-5 py-2 border-2 border-[#2B2B2A] shadow-[3px_3px_0_#FF6B6B] hover:shadow-[1px_1px_0_#FF6B6B] hover:translate-x-[2px] hover:translate-y-[2px] transition-all inline-block">
+            <Link to="/signup" className="doodle-btn text-lg font-bold bg-[#2B2B2A] text-[#FFFDF6] px-5 py-2 border-2 border-[#2B2B2A] shadow-[3px_3px_0_#FF6B6B] hover:shadow-[1px_1px_0_#FF6B6B] hover:translate-x-[2px] hover:translate-y-[2px] transition-all inline-block">
               Sign up free
             </Link>
           </div>
