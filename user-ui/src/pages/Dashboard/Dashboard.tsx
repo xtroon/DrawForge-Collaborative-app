@@ -111,9 +111,9 @@ export default function Dashboard() {
   const user = { name: "Guest User", picture: null, id: "guest" };
   const filteredBoards = boards;
 
-  const renameBoard = (id: string, title: string) => {};
-  const toggleStar = (e: any, id: string, starred: boolean) => {};
-  const deleteBoard = (id: string) => {};
+  const renameBoard = (_id: string, _title: string) => {};
+  const toggleStar = (_e: any, _id: string, _starred: boolean) => {};
+  const deleteBoard = (_id: string) => {};
   return (
     <div
       onClick={() => {

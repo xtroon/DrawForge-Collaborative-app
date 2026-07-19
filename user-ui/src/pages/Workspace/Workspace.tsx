@@ -30,8 +30,6 @@ function Workspace() {
   const [tempTitle, setTempTitle] = useState("");
   
   const navigate = useNavigate();
-  const user = { name: "Guest User" };
-  
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [history, setHistory] = useState<Shape[][]>([[]]);
   const [historyStep, setHistoryStep] = useState(0);
