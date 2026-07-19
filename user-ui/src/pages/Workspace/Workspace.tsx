@@ -10,10 +10,7 @@ import {
 import Share from "../../components/Share";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
-import axios from "axios";
 import type { Shape } from "../../features/types";
-import { useAuth } from "../../contexts/AuthContext";
-import { socket } from "../../services/socket";
 import { jsPDF } from "jspdf";
 
 function Workspace() {
@@ -50,104 +47,15 @@ function Workspace() {
   const [liveUsers, setLiveUsers] = useState<Array<{ socketId: string, user: { name: string } }>>([]);
 
   useEffect(() => {
-    if (!id || !user) return;
-    
-    if (id === "new") {
-      if (isCreatingRef.current) return;
-      isCreatingRef.current = true;
-      axios.post("http://localhost:5000/api/boards", { title: "Untitled Board", owner: user.id })
-        .then(res => {
-          navigate(`/board/${res.data._id}`, { replace: true });
-        })
-        .catch(err => {
-          console.error("Failed to create new board:", err);
-          isCreatingRef.current = false;
-        });
-      return;
-    }
-
-    axios.get(`http://localhost:5000/api/boards/${id}`)
-      .then(res => {
-        if (res.data) {
-          if (res.data.title) {
-            setBoardTitle(res.data.title);
-            setTempTitle(res.data.title);
-          }
-          if (res.data.owner) {
-            setBoardOwnerId(res.data.owner);
-          }
-          if (res.data.shapes) {
-            setShapes(res.data.shapes);
-            setHistory([res.data.shapes]);
-            setHistoryStep(0);
-          }
-        }
-      })
-      .catch(err => console.error("Failed to load board:", err));
-  }, [id, user, navigate]);
-
-  useEffect(() => {
-    if (id && id !== "new") {
-      socket.emit('join-room', { 
-        roomId: id, 
-        user: { name: user?.name || "Guest" } 
-      });
-
-      const handleShapesUpdated = (newShapes: Shape[]) => {
-        setShapes(newShapes);
-        setHistory(prev => {
-          const newHistory = [...prev];
-          newHistory.push(newShapes);
-          return newHistory;
-        });
-        setHistoryStep(prev => prev + 1);
-      };
-
-      const handleCursorMoved = (data: { socketId: string, x: number, y: number, user: { name: string } }) => {
-        setCursors(prev => ({
-          ...prev,
-          [data.socketId]: { x: data.x, y: data.y, user: data.user }
-        }));
-      };
-
-      const handleCursorDisconnected = (socketId: string) => {
-        setCursors(prev => {
-          const newCursors = { ...prev };
-          delete newCursors[socketId];
-          return newCursors;
-        });
-      };
-
-      const handleRoomUsers = (users: Array<{ socketId: string, user: { name: string } }>) => {
-        setLiveUsers(users);
-      };
-
-      socket.on('shapes-updated', handleShapesUpdated);
-      socket.on('cursor-moved', handleCursorMoved);
-      socket.on('cursor-disconnected', handleCursorDisconnected);
-      socket.on('room-users', handleRoomUsers);
-
-      return () => {
-        socket.emit('leave-room', id);
-        socket.off('shapes-updated', handleShapesUpdated);
-        socket.off('cursor-moved', handleCursorMoved);
-        socket.off('cursor-disconnected', handleCursorDisconnected);
-        socket.off('room-users', handleRoomUsers);
-      };
-    }
-  }, [id, user]);
+    if (!id || id === "new") return;
+    setBoardTitle("Local Board");
+  }, [id, navigate]);
 
   const commitShapes = (newShapes: Shape[]) => {
     const newHistory = history.slice(0, historyStep + 1);
     newHistory.push(newShapes);
     setHistory(newHistory);
     setHistoryStep(newHistory.length - 1);
-
-    if (id) {
-      axios.put(`http://localhost:5000/api/boards/${id}/shapes`, { shapes: newShapes })
-        .catch(err => console.error("Failed to save shapes:", err));
-      socket.emit('update-shapes', { roomId: id, shapes: newShapes });
-    }
   };
 
   const handleTitleSave = () => {
@@ -157,10 +65,6 @@ function Workspace() {
       return;
     }
     setBoardTitle(tempTitle);
-    if (id && id !== "new") {
-      axios.put(`http://localhost:5000/api/boards/${id}/title`, { title: tempTitle })
-        .catch(err => console.error("Failed to update title:", err));
-    }
   };
 
   const handleUndo = () => {
@@ -170,7 +74,7 @@ function Workspace() {
       setShapes(history[newStep]);
       if (id && id !== "new") {
         socket.emit('update-shapes', { roomId: id, shapes: history[newStep] });
-        axios.put(`http://localhost:5000/api/boards/${id}/shapes`, { shapes: history[newStep] }).catch(err => console.error(err));
+        axios.put(`http://localhost:5000/api/boards/${id}/shapes`, { shapes: history[newStep], userId: user?.id }).catch(err => console.error(err));
       }
     }
   };
@@ -182,7 +86,7 @@ function Workspace() {
       setShapes(history[newStep]);
       if (id && id !== "new") {
         socket.emit('update-shapes', { roomId: id, shapes: history[newStep] });
-        axios.put(`http://localhost:5000/api/boards/${id}/shapes`, { shapes: history[newStep] }).catch(err => console.error(err));
+        axios.put(`http://localhost:5000/api/boards/${id}/shapes`, { shapes: history[newStep], userId: user?.id }).catch(err => console.error(err));
       }
     }
   };
@@ -242,25 +146,9 @@ function Workspace() {
     }
   };
 
-  const isAdmin = user && user.id === boardOwnerId;
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    const now = Date.now();
-    if (now - lastEmitRef.current > 50) {
-      if (id && id !== "new" && user) {
-        const scale = zoom / 100;
-        const worldX = (e.clientX - pan.x) / scale;
-        const worldY = (e.clientY - pan.y) / scale;
-
-        socket.emit('cursor-move', {
-          roomId: id,
-          x: worldX,
-          y: worldY,
-          user: { name: user.name }
-        });
-        lastEmitRef.current = now;
-      }
-    }
+    // Disabled in mock mode
   };
 
   const exportImage = () => {
@@ -363,7 +251,7 @@ function Workspace() {
         />
 
         {/* current online users  */}
-        <Online zoom={zoom} setZoom={setZoom} onShareClick={() => setShowSharePopup(true)} liveUsers={liveUsers} />
+        <Online zoom={zoom} setZoom={setZoom} onShareClick={() => setShowSharePopup(true)} liveUsers={[]} />
 
         {/* top-left controls */}
         <div className="fixed top-6 left-6 z-50 flex items-center gap-4">
@@ -390,17 +278,15 @@ function Workspace() {
                 className="bg-white border-2 border-[#2B2B2A] shadow-[3px_3px_0_#2B2B2A] px-4 py-1.5 doodle-btn font-doodle text-xl font-bold text-[#2B2B2A] w-[200px] outline-none focus:shadow-[1px_1px_0_#4FC1CF]"
               />
             ) : (
-              <div 
-                onClick={() => { 
-                  if (isAdmin) {
+                <div 
+                  onClick={() => { 
                     setIsEditingTitle(true); setTempTitle(boardTitle); 
-                  }
-                }}
-                className={`bg-white border-2 border-[#2B2B2A] shadow-[3px_3px_0_#2B2B2A] px-4 py-1.5 doodle-btn font-doodle text-xl font-bold text-[#2B2B2A] truncate max-w-[200px] ${isAdmin ? 'cursor-pointer hover:bg-[#E5E1D8]' : ''} transition-colors`}
-                title={isAdmin ? "Click to edit" : ""}
-              >
-                {boardTitle}
-              </div>
+                  }}
+                  className={`bg-white border-2 border-[#2B2B2A] shadow-[3px_3px_0_#2B2B2A] px-4 py-1.5 doodle-btn font-doodle text-xl font-bold text-[#2B2B2A] truncate max-w-[200px] cursor-pointer hover:bg-[#E5E1D8] transition-colors flex items-center gap-2`}
+                  title="Click to edit"
+                >
+                  {boardTitle}
+                </div>
             )}
           </div>
         </div>

@@ -1,31 +1,51 @@
-const User = require('../models/user.model');
+const User = require("../models/user.model");
 
-// Update user details (e.g., name)
-exports.updateUser = async (req, res) => {
+// update user
+async function updateUser(req, res) {
   try {
     const { id } = req.params;
     const { name } = req.body;
 
     if (!name) {
-      return res.status(400).json({ error: 'Name is required' });
+      return res.status(400).json({
+        success: false,
+        message: "Name is required",
+      });
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
       id,
       { name },
-      { returnDocument: 'after', runValidators: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     );
 
-    if (!updatedUser) {
-      return res.status(404).json({ error: 'User not found' });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
-    res.status(200).json({
-      id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email
+    return res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
     });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to update user', details: error.message });
+  } catch (err) {
+    console.error("Update User Error:", err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
-};
+}
+
+module.exports = { updateUser };

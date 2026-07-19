@@ -6,7 +6,9 @@ const pointSchema = new mongoose.Schema({
 }, { _id: false });
 
 const shapeSchema = new mongoose.Schema({
-  id: { type: String, required: true },
+  id: { type: String, 
+    required: true 
+  },
   type: { 
     type: String, 
     required: true,

@@ -46,7 +46,7 @@ io.on('connection', (socket) => {
       roomUsers[roomId] = roomUsers[roomId].filter(u => u.socketId !== socket.id);
       io.to(roomId).emit('room-users', roomUsers[roomId]);
     }
-    // Remove their cursor
+    // remove  cursor
     io.to(roomId).emit('cursor-disconnected', socket.id);
     console.log(`Socket ${socket.id} left room ${roomId}`);
   });

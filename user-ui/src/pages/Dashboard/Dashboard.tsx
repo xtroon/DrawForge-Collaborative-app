@@ -1,6 +1,4 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "../../contexts/AuthContext";
-import axios from "axios";
+import { useState } from "react";
 import {
   PenTool,
   Search,
@@ -40,9 +38,7 @@ function Pin({ color }: { color: string }) {
 
 const NAV_ITEMS = [
   { id: "boards", label: "My Boards", icon: LayoutGrid },
-  { id: "recent", label: "Recent", icon: Clock },
   { id: "starred", label: "Starred", icon: Star },
-  { id: "trash", label: "Trash", icon: Trash2 },
 ];
 
 const patterns = ["grid", "scribble", "dots"];
@@ -105,102 +101,16 @@ export default function Dashboard() {
   const [active, setActive] = useState("boards");
   const [roomCode, setRoomCode] = useState("");
   const [boards, setBoards] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const loading = false;
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showProfilePopup, setShowProfilePopup] = useState(false);
   const navigate = useNavigate();
-  const { user, logout, updateUser } = useAuth();
-  const [editUserName, setEditUserName] = useState(user?.name || "");
-
-  useEffect(() => {
-    if (user && editUserName === "") {
-      setEditUserName(user.name);
-    }
-  }, [user]);
-
-  const handleRenameUser = () => {
-    if (!editUserName.trim() || !user) return;
-    axios.put(`http://localhost:5000/api/users/${user.id}`, { name: editUserName })
-      .then(res => {
-        updateUser({ ...user, name: res.data.name });
-        setShowProfilePopup(false);
-      })
-      .catch(err => console.error("Failed to rename user", err));
-  };
-
-  const toggleStar = (e: React.MouseEvent, id: string, currentStarred: boolean) => {
-    e.stopPropagation();
-    axios.put(`http://localhost:5000/api/boards/${id}/star`, { isStarred: !currentStarred })
-      .then(() => {
-        setBoards(boards.map(b => b._id === id ? { ...b, isStarred: !currentStarred } : b));
-      })
-      .catch(err => console.error("Failed to toggle star", err));
-  };
-
-  const toggleTrash = (id: string, currentTrashed: boolean) => {
-    axios.put(`http://localhost:5000/api/boards/${id}/trash`, { isTrashed: !currentTrashed })
-      .then(() => {
-        setBoards(boards.map(b => b._id === id ? { ...b, isTrashed: !currentTrashed } : b));
-        setOpenDropdownId(null);
-      })
-      .catch(err => console.error("Failed to toggle trash", err));
-  };
-
-  const renameBoard = (id: string, newTitle: string) => {
-    if (!newTitle.trim()) {
-      setRenamingId(null);
-      return;
-    }
-    axios.put(`http://localhost:5000/api/boards/${id}/title`, { title: newTitle })
-      .then(() => {
-        setBoards(boards.map(b => b._id === id ? { ...b, title: newTitle } : b));
-        setRenamingId(null);
-      })
-      .catch(err => console.error("Failed to rename board", err));
-  };
-
-  const deleteBoard = (id: string) => {
-    axios.delete(`http://localhost:5000/api/boards/${id}`)
-      .then(() => {
-        setBoards(boards.filter(b => b._id !== id));
-        setOpenDropdownId(null);
-      })
-      .catch(err => console.error("Failed to delete board", err));
-  };
-
-  useEffect(() => {
-    if (user) {
-      axios.get(`http://localhost:5000/api/boards/user/${user.id}`)
-        .then(res => {
-          setBoards(res.data);
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error("Failed to fetch boards", err);
-          setLoading(false);
-        });
-    }
-  }, [user]);
-
-  const filteredBoards = boards.filter(b => {
-    if (searchQuery && !b.title.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
-    }
-    if (active === "boards") return !b.isTrashed;
-    if (active === "recent") return !b.isTrashed;
-    if (active === "starred") return !b.isTrashed && b.isStarred;
-    if (active === "trash") return b.isTrashed;
-    return true;
-  }).sort((a, b) => {
-    if (active === "recent") {
-      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-    }
-    return 0;
-  });
-
+  
+  const user = { name: "Guest User", picture: null, id: "guest" };
+  const filteredBoards = boards;
   return (
     <div
       onClick={() => {
@@ -287,36 +197,11 @@ export default function Dashboard() {
                 onClick={(e) => e.stopPropagation()}
                 className="absolute bottom-20 left-0 w-64 bg-white border-2 border-[#2B2B2A] shadow-[4px_4px_0_#2B2B2A] rounded-2xl p-4 z-50 flex flex-col gap-4"
               >
-                <div>
-                  <label className="text-xs font-bold text-[#8a8a86] mb-1 block">Account details</label>
-                  <p className="text-sm font-bold text-[#2B2B2A] truncate">{user?.email}</p>
-                </div>
-                
-                <div>
-                  <label className="text-xs font-bold text-[#8a8a86] mb-1 block">Your name</label>
-                  <div className="flex items-center gap-2">
-                    <input 
-                      value={editUserName}
-                      onChange={(e) => setEditUserName(e.target.value)}
-                      className="border-2 border-[#2B2B2A] rounded-lg px-2 py-1 outline-none text-sm w-full font-bold bg-[#f4f4f0] focus:bg-white"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleRenameUser();
-                      }}
-                    />
-                    <button 
-                      onClick={handleRenameUser}
-                      className="p-1.5 bg-[#4FC1CF] text-white rounded-lg border-2 border-[#2B2B2A] hover:bg-[#2B2B2A] transition-colors"
-                    >
-                      <PenTool size={14} />
-                    </button>
-                  </div>
-                </div>
-
                 <button 
-                  onClick={logout} 
+                  onClick={() => navigate('/board/new')}
                   className="w-full mt-2 flex items-center justify-center gap-2 text-[#FF6B6B] hover:text-white hover:bg-[#FF6B6B] border-2 border-transparent hover:border-[#2B2B2A] p-2 rounded-xl transition-all font-bold"
                 >
-                  <DoorOpen size={18} /> Sign out
+                  <PenTool size={18} /> Start Drawing
                 </button>
               </div>
             )}
@@ -468,10 +353,10 @@ export default function Dashboard() {
                   
                   {/* Star Button */}
                   <button 
-                    onClick={(e) => toggleStar(e, b._id, b.isStarred)}
-                    className={`absolute top-6 right-6 z-10 w-8 h-8 rounded-full border-2 border-[#2B2B2A] flex items-center justify-center transition-colors ${b.isStarred ? 'bg-[#FFC53D] shadow-[2px_2px_0_#2B2B2A]' : 'bg-white hover:bg-[#f4f4f0]'}`}
+                    onClick={(e) => toggleStar(e, b._id, user ? b.starredBy?.includes(user.id) : false)}
+                    className={`absolute top-6 right-6 z-10 w-8 h-8 rounded-full border-2 border-[#2B2B2A] flex items-center justify-center transition-colors ${user && b.starredBy?.includes(user.id) ? 'bg-[#FFC53D] shadow-[2px_2px_0_#2B2B2A]' : 'bg-white hover:bg-[#f4f4f0]'}`}
                   >
-                    <Star size={14} className={b.isStarred ? 'fill-[#2B2B2A] text-[#2B2B2A]' : 'text-[#8a8a86]'} />
+                    <Star size={14} className={user && b.starredBy?.includes(user.id) ? 'fill-[#2B2B2A] text-[#2B2B2A]' : 'text-[#8a8a86]'} />
                   </button>
                   
                   {/* 3 dots menu */}
@@ -501,38 +386,21 @@ export default function Dashboard() {
                           </button>
                         )}
                         
-                        {active === "trash" ? (
-                          <>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleTrash(b._id, true);
-                              }}
-                              className="w-full text-left px-4 py-2 hover:bg-[#4FC1CF] hover:text-white transition-colors font-bold text-sm flex items-center gap-2"
-                            >
-                              <DoorOpen size={16} /> Restore
-                            </button>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (user && b.owner !== user.id) {
+                                // Visitor deleting from their starred view
+                                toggleStar(e, b._id, true);
+                                setOpenDropdownId(null);
+                            } else {
                                 deleteBoard(b._id);
-                              }}
-                              className="w-full text-left px-4 py-2 hover:bg-[#FF6B6B] hover:text-white transition-colors font-bold text-sm flex items-center gap-2"
-                            >
-                              <Trash2 size={16} /> Delete Forever
-                            </button>
-                          </>
-                        ) : (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleTrash(b._id, false);
-                            }}
-                            className="w-full text-left px-4 py-2 hover:bg-[#FF6B6B] hover:text-white transition-colors font-bold text-sm flex items-center gap-2"
-                          >
-                            <Trash2 size={16} /> Move to Trash
-                          </button>
-                        )}
+                            }
+                          }}
+                          className="w-full text-left px-4 py-2 hover:bg-[#FF6B6B] hover:text-white transition-colors font-bold text-sm flex items-center gap-2"
+                        >
+                          <Trash2 size={16} /> Delete
+                        </button>
                       </div>
                     )}
                   </div>

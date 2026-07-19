@@ -7,7 +7,7 @@ const boardSchema = new mongoose.Schema({
     default: "Untitled Board"
   },
   owner: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'User',
     required: true
   },
@@ -15,14 +15,10 @@ const boardSchema = new mongoose.Schema({
     type: [shapeSchema],
     default: []
   },
-  isStarred: {
-    type: Boolean,
-    default: false
-  },
-  isTrashed: {
-    type: Boolean,
-    default: false
-  }
+  visitors: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Board', boardSchema);

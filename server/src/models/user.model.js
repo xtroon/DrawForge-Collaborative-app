@@ -17,14 +17,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false
   },
-  clerkId: {
-    type: String,
-    unique: true,
-    sparse: true
-  },
-  picture: {
-    type: String
-  },
+  starred: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Board'
+  }],
   boards: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Board'
