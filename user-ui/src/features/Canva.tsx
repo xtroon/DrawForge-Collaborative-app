@@ -374,7 +374,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
     <>
       <canvas
         ref={canvasRef}
-        className={`absolute inset-0 bg-transparent ${
+        className={`absolute inset-0 bg-transparent touch-none ${
         tool === "pointer"
           ? drawing ? "cursor-grabbing" : "cursor-grab"
           : "cursor-crosshair"
