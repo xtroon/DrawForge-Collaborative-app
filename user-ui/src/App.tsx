@@ -5,7 +5,7 @@ import Workspace from "./pages/Workspace/Workspace"
 import Auth from "./pages/Auth/Auth"
 import NotFound from "./pages/NotFound/Oops"
 import { useAuth } from "./contexts/AuthContext"
-import { ReactNode } from "react"
+import type { ReactNode } from "react"
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated } = useAuth();
@@ -18,11 +18,13 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 };
 
 function App() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Auth />} />
-      <Route path="/signup" element={<Auth />} />
+      <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Landing />} />
+      <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Auth />} />
+      <Route path="/signup" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Auth />} />
 
       <Route 
         path="/dashboard" 

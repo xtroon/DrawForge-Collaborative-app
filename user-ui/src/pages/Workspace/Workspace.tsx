@@ -14,6 +14,7 @@ import type { Shape } from "../../features/types";
 import { jsPDF } from "jspdf";
 import { useAuth } from "../../contexts/AuthContext";
 import axios from "axios";
+import { socket } from "../../services/socket";
 
 function Workspace() {
   const { id } = useParams<{ id: string }>();
@@ -40,15 +41,20 @@ function Workspace() {
   const zoomRef = useRef(zoom);
   const panRef = useRef(pan);
   
-  const [cursors] = useState<Record<string, { x: number; y: number; user: { name: string } }>>({});
+  const [cursors, setCursors] = useState<Record<string, { x: number; y: number; user: { name: string } }>>({});
+  const [liveUsers, setLiveUsers] = useState<any[]>([]);
 
   const { user } = useAuth();
+  const isCreatingRef = useRef(false);
   
   useEffect(() => {
     if (!id) return;
     if (id === "new") {
+      if (isCreatingRef.current) return;
+      isCreatingRef.current = true;
+      
       const createNewBoard = async () => {
-        if (!user) return; // Need user to create board
+        if (!user) return; // need user to create board
         try {
           const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/boards`, {
             title: "Untitled Board",
@@ -76,6 +82,49 @@ function Workspace() {
       };
       fetchBoard();
     }
+
+    // Connect to room
+    if (id && id !== 'new') {
+      socket.emit('join-room', { roomId: id, user: user || { name: "Guest" } });
+    }
+
+    const onRoomUsers = (users: any[]) => {
+      setLiveUsers(users.filter(u => u.socketId !== socket.id));
+    };
+
+    const onCursorMoved = (data: { socketId: string, x: number, y: number, user: any }) => {
+      setCursors(prev => ({
+        ...prev,
+        [data.socketId]: { x: data.x, y: data.y, user: data.user }
+      }));
+    };
+
+    const onCursorDisconnected = (socketId: string) => {
+      setCursors(prev => {
+        const next = { ...prev };
+        delete next[socketId];
+        return next;
+      });
+    };
+
+    const onShapesUpdated = (newShapes: Shape[]) => {
+      setShapes(newShapes);
+      setHistory(h => [...h, newShapes]);
+      setHistoryStep(s => s + 1);
+    };
+
+    socket.on('room-users', onRoomUsers);
+    socket.on('cursor-moved', onCursorMoved);
+    socket.on('cursor-disconnected', onCursorDisconnected);
+    socket.on('shapes-updated', onShapesUpdated);
+
+    return () => {
+      if (id && id !== 'new') socket.emit('leave-room', id);
+      socket.off('room-users', onRoomUsers);
+      socket.off('cursor-moved', onCursorMoved);
+      socket.off('cursor-disconnected', onCursorDisconnected);
+      socket.off('shapes-updated', onShapesUpdated);
+    };
   }, [id, navigate, user]);
 
   const commitShapes = (newShapes: Shape[]) => {
@@ -84,6 +133,11 @@ function Workspace() {
     setHistory(newHistory);
     setHistoryStep(newHistory.length - 1);
     
+    // Broadcast via socket
+    if (id && id !== "new") {
+      socket.emit('update-shapes', { roomId: id, shapes: newShapes });
+    }
+
     // Save shapes to backend
     if (id && id !== "new" && user) {
       axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/boards/${id}`, {
@@ -264,6 +318,11 @@ function Workspace() {
           shapes={shapes}
           setShapes={setShapes}
           commitShapes={commitShapes}
+          onCursorMove={(x, y) => {
+            if (id && id !== 'new') {
+              socket.emit('cursor-move', { roomId: id, x, y, user: user || { name: "Guest" } });
+            }
+          }}
         />
 
         {/* toolbar  */}
@@ -283,7 +342,7 @@ function Workspace() {
         />
 
         {/* current online users  */}
-        <Online zoom={zoom} setZoom={setZoom} onShareClick={() => setShowSharePopup(true)} liveUsers={[]} />
+        <Online zoom={zoom} setZoom={setZoom} onShareClick={() => setShowSharePopup(true)} liveUsers={liveUsers} />
 
         {/* top-left controls */}
         <div className="fixed top-6 left-6 z-50 flex items-center gap-4">

@@ -18,6 +18,10 @@ const boardSchema = new mongoose.Schema({
   visitors: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  }],
+  starredBy: [{
+    type: String,
+    ref: 'User'
   }]
 }, { timestamps: true });
 

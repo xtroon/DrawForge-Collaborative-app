@@ -13,9 +13,10 @@ type CanvasProps = {
   shapes: Shape[];
   setShapes: React.Dispatch<React.SetStateAction<Shape[]>>;
   commitShapes?: (shapes: Shape[]) => void;
+  onCursorMove?: (x: number, y: number) => void;
 };
 
-export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, shapes, setShapes, commitShapes }: CanvasProps) {
+export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, shapes, setShapes, commitShapes, onCursorMove }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -196,6 +197,10 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
     if (!ctx || !canvas) return;
 
     const { x: worldX, y: worldY } = getWorldCoordinates(e.clientX, e.clientY);
+
+    if (onCursorMove) {
+      onCursorMove(worldX, worldY);
+    }
 
     if (tool === "eraser") {
         let erasedAny = false;

@@ -26,6 +26,7 @@ async function createBoard(req, res) {
 async function getBoard(req, res) {
   try {
     const { id } = req.params;
+    const { userId } = req.query;
     
     const board = await Board.findById(id);
     if (!board) {
@@ -49,8 +50,8 @@ async function updateBoard(req, res) {
       return res.status(404).json({ error: 'Board not found' });
     }
 
-    if (board.owner.toString() !== userId) {
-      return res.status(403).json({ error: 'Only the owner can update the board' });
+    if (title !== undefined && board.owner.toString() !== userId) {
+      return res.status(403).json({ error: 'Only the owner can rename the board' });
     }
 
     if (shapes !== undefined) {
@@ -75,10 +76,14 @@ async function updateBoard(req, res) {
 async function deleteBoard(req, res) {
   try {
     const { id } = req.params;
-    const deletedBoard = await Board.findByIdAndDelete(id);
-    if (!deletedBoard) {
+    const { userId } = req.query;
+
+    const board = await Board.findById(id);
+    if (!board) {
       return res.status(404).json({ error: 'Board not found' });
     }
+
+    const deletedBoard = await Board.findByIdAndDelete(id);
     return res.status(200).json({ message: 'Board deleted successfully' });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to delete board', details: error.message });
@@ -121,6 +126,8 @@ async function toggleStar(req, res) {
     if (!board) {
       return res.status(404).json({ error: 'Board not found' });
     }
+
+    if (!board.starredBy) board.starredBy = [];
 
     const index = board.starredBy.indexOf(userId);
     if (index > -1) {
