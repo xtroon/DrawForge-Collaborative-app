@@ -8,5 +8,5 @@ export const socket = io(URL, {
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
-  transports: ['websocket', 'polling'] // Try websocket first, fallback to polling
+  transports: ['polling', 'websocket'] // Always start with polling to prevent upgrade errors on Render
 });
