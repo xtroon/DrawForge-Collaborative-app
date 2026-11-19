@@ -1,6 +1,7 @@
 const express = require("express")
 
 const cors = require('cors');
+const { apiLimiter } = require('./middlewares/rateLimiter');
 
 const app = express()
 
