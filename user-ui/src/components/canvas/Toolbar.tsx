@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { FaMousePointer, FaPencilAlt, FaPaintBrush, FaEraser, FaShapes, FaFont, FaSlash, FaUndo, FaRedo, FaRegClone, FaTh, FaLongArrowAltRight } from "react-icons/fa";
+import { Sparkles } from "lucide-react";
 
 type ToolType = "pointer" | "pencil" | "brush" | "eraser" | "rectangle" | "circle" | "line" | "rounded-rectangle" | "rhombus" | "arrow" | "text";
 
@@ -16,9 +17,11 @@ type ToolbarProps = {
   canRedo: boolean;
   showGrid: boolean;
   setShowGrid: (show: boolean) => void;
+  isAiOpen?: boolean;
+  onToggleAi?: () => void;
 };
 
-export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, onUndo, onRedo, canUndo, canRedo, showGrid, setShowGrid }: ToolbarProps) {
+export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, setStrokeWidth, onUndo, onRedo, canUndo, canRedo, showGrid, setShowGrid, isAiOpen, onToggleAi }: ToolbarProps) {
   const [activeMenu, setActiveMenu] = useState<"shape" | "color" | "draw" | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
@@ -258,8 +261,8 @@ export default function Toolbar({ tool, setTool, color, setColor, strokeWidth, s
             <FaTh size={18} />
           </button>
 
-          <button className={getBtnClass(false)} title="Duplicate (Coming Soon)">
-            <FaRegClone size={18} />
+          <button className={getBtnClass(!!isAiOpen)} onClick={onToggleAi} title="AI Copilot (Draw with AI)">
+            <Sparkles size={18} className={isAiOpen ? "text-[#2B2B2A]" : "text-[#FF6B6B]"} />
           </button>
 
           <div className="w-px h-8 bg-gray-700/80 mx-2" />
