@@ -99,3 +99,8 @@ export type BoundingBox = {
 };
 
 export type ResizeHandle = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w";
+
+export const BOARD_WIDTH = 3600;
+export const BOARD_HEIGHT = 2400;
+export const MIN_ZOOM = 20;
+export const MAX_ZOOM = 100;

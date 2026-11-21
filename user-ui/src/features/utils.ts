@@ -1,4 +1,5 @@
 import type { Shape } from "./types";
+import { BOARD_WIDTH, BOARD_HEIGHT } from "./types";
 
 function distanceToLineSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
     const l2 = (x1 - x2) ** 2 + (y1 - y2) ** 2;
@@ -6,6 +7,53 @@ function distanceToLineSegment(px: number, py: number, x1: number, y1: number, x
     let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
     t = Math.max(0, Math.min(1, t));
     return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
+}
+
+export function clampPan(
+  pan: { x: number; y: number },
+  zoom: number,
+  viewportWidthOrShapes?: number | Shape[],
+  viewportHeight?: number
+): { x: number; y: number } {
+  const scale = zoom / 100;
+  const viewportWidth =
+    typeof viewportWidthOrShapes === "number"
+      ? viewportWidthOrShapes
+      : typeof window !== "undefined"
+      ? window.innerWidth
+      : 1920;
+  const vpHeight =
+    typeof viewportHeight === "number"
+      ? viewportHeight
+      : typeof window !== "undefined"
+      ? window.innerHeight
+      : 1080;
+
+  const boardPixelWidth = BOARD_WIDTH * scale;
+  const boardPixelHeight = BOARD_HEIGHT * scale;
+
+  let clampedX: number;
+  if (boardPixelWidth >= viewportWidth) {
+    const minX = viewportWidth - boardPixelWidth;
+    const maxX = 0;
+    clampedX = Math.min(Math.max(pan.x, minX), maxX);
+  } else {
+    clampedX = (viewportWidth - boardPixelWidth) / 2;
+  }
+
+  let clampedY: number;
+  if (boardPixelHeight >= vpHeight) {
+    const minY = vpHeight - boardPixelHeight;
+    const maxY = 0;
+    clampedY = Math.min(Math.max(pan.y, minY), maxY);
+  } else {
+    clampedY = (vpHeight - boardPixelHeight) / 2;
+  }
+
+  return {
+    x: clampedX,
+    y: clampedY,
+  };
 }
 
 export function isShapeHit(shape: Shape, x: number, y: number, threshold: number = 10): boolean {

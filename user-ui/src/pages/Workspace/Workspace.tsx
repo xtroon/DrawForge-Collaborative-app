@@ -12,6 +12,8 @@ import Share from "../../components/Share";
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import type { Shape } from "../../features/types";
+import { MIN_ZOOM, MAX_ZOOM } from "../../features/types";
+import { clampPan } from "../../features/utils";
 import { jsPDF } from "jspdf";
 import { useAuth } from "../../contexts/AuthContext";
 import axios from "axios";
@@ -46,6 +48,7 @@ function Workspace() {
 
   const navigate = useNavigate();
   const [shapes, setShapes] = useState<Shape[]>([]);
+  const shapesRef = useRef(shapes);
   const [history, setHistory] = useState<Shape[][]>([[]]);
   const [historyStep, setHistoryStep] = useState(0);
 
@@ -221,6 +224,10 @@ function Workspace() {
   }, [zoom, pan]);
 
   useEffect(() => {
+    shapesRef.current = shapes;
+  }, [shapes]);
+
+  useEffect(() => {
     const appElement = appRef.current;
     if (!appElement) return;
 
@@ -232,7 +239,7 @@ function Workspace() {
 
       const delta = -e.deltaY * 0.25;
       const newZoom = Math.round(
-        Math.min(Math.max(currentZoom + delta, 10), 300),
+        Math.min(Math.max(currentZoom + delta, MIN_ZOOM), MAX_ZOOM),
       );
 
       if (newZoom === currentZoom) return;
@@ -240,8 +247,9 @@ function Workspace() {
       const scale = currentZoom / 100;
       const newScale = newZoom / 100;
 
-      const mouseX = e.clientX;
-      const mouseY = e.clientY;
+      const bounds = appElement.getBoundingClientRect();
+      const mouseX = e.clientX - bounds.left;
+      const mouseY = e.clientY - bounds.top;
 
       // Calculate world coordinates under mouse
       const worldX = (mouseX - currentPan.x) / scale;
@@ -252,7 +260,7 @@ function Workspace() {
       const newPanY = mouseY - worldY * newScale;
 
       setZoom(newZoom);
-      setPan({ x: newPanX, y: newPanY });
+      setPan(clampPan({ x: newPanX, y: newPanY }, newZoom));
     };
 
     // passive: false is required to allow e.preventDefault()
@@ -399,7 +407,11 @@ function Workspace() {
         {/* current online users  */}
         <Online
           zoom={zoom}
-          setZoom={setZoom}
+          setZoom={(targetZoom) => {
+            const clampedZoom = Math.min(Math.max(targetZoom, MIN_ZOOM), MAX_ZOOM);
+            setZoom(clampedZoom);
+            setPan((p) => clampPan(p, clampedZoom));
+          }}
           onShareClick={() => setShowSharePopup(true)}
           liveUsers={liveUsers}
         />
@@ -478,16 +490,92 @@ function Workspace() {
         <AiChatDrawer
           isOpen={isAiOpen}
           onClose={() => setIsAiOpen(false)}
-          onSendPrompt={async (prompt) => {
+          onSendPrompt={async (prompt, history) => {
             try {
+              const app = appRef.current;
+              const scale = zoomRef.current / 100;
+              const drawerWidth =
+                document
+                  .querySelector<HTMLElement>("[data-ai-drawer]")
+                  ?.getBoundingClientRect().width ?? 0;
+              const visibleWidth = Math.max(
+                1,
+                (app?.clientWidth ?? window.innerWidth) - drawerWidth,
+              );
+              const viewportHeight = app?.clientHeight ?? window.innerHeight;
+              const viewCenter = {
+                x: (visibleWidth / 2 - panRef.current.x) / scale,
+                y: (viewportHeight / 2 - panRef.current.y) / scale,
+              };
+
+              // Sanitize current shapes to avoid passing huge pencil point arrays
+              const currentShapesPayload = shapesRef.current
+                .filter((s) => s && s.type !== "eraser")
+                .map((s) => {
+                  if (s.type === "text") {
+                    return {
+                      id: s.id,
+                      type: s.type,
+                      text: s.text,
+                      position: s.position,
+                      color: s.color,
+                      fontSize: s.fontSize,
+                    };
+                  }
+                  if ("start" in s && "end" in s) {
+                    return {
+                      id: s.id,
+                      type: s.type,
+                      start: s.start,
+                      end: s.end,
+                      color: s.color,
+                      strokeWidth: s.strokeWidth,
+                    };
+                  }
+                  return null;
+                })
+                .filter(Boolean);
+
               const res = await axios.post(
                 `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/ai/generate`,
-                { prompt },
+                {
+                  prompt,
+                  history: (history || []).map((h) => ({
+                    sender: h.sender,
+                    text: h.text,
+                  })),
+                  currentShapes: currentShapesPayload,
+                  viewportCenter: viewCenter,
+                },
               );
 
-              if (res.data.shapes && res.data.shapes.length > 0) {
-                commitShapes([...shapes, ...res.data.shapes]);
+              if (res.data.shapes) {
+                const incomingShapes = (res.data.shapes as Shape[]).map((s) => ({
+                  ...s,
+                  id: s.id || crypto.randomUUID(),
+                }));
+
+                let nextShapes: Shape[];
+                if (res.data.action === "replace") {
+                  // Keep user's hand-drawn strokes (pencil/brush/eraser)
+                  const handDrawn = shapesRef.current.filter(
+                    (s) =>
+                      s.type === "pencil" ||
+                      s.type === "brush" ||
+                      s.type === "eraser",
+                  );
+                  nextShapes = [...incomingShapes, ...handDrawn];
+                } else {
+                  // "add" action: append to existing shapes
+                  nextShapes = [...shapesRef.current, ...incomingShapes];
+                }
+
+                shapesRef.current = nextShapes;
+                setShapes(nextShapes);
+                commitShapes(nextShapes);
               }
+
+              return { reply: res.data.reply };
             } catch (err) {
               console.error("AI Generation failed:", err);
               throw err;

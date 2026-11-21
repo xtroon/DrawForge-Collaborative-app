@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FiShare  } from "react-icons/fi";
+import { MIN_ZOOM, MAX_ZOOM } from "../../features/types";
 
 
 type OnlineProps = {
@@ -12,8 +13,8 @@ type OnlineProps = {
 export default function Online({ zoom, setZoom, onShareClick, liveUsers = [] }: OnlineProps) {
   const [showUsers, setShowUsers] = useState(false);
 
-  const handleZoomIn = () => setZoom(Math.min(zoom + 10, 300));
-  const handleZoomOut = () => setZoom(Math.max(zoom - 10, 10));
+  const handleZoomIn = () => setZoom(Math.min(zoom + 10, MAX_ZOOM));
+  const handleZoomOut = () => setZoom(Math.max(zoom - 10, MIN_ZOOM));
 
   return (
     <div className="fixed top-6 right-6 bg-white border-2 border-[#2B2B2A] shadow-[6px_6px_0_#9B7EDE] py-2 px-4 doodle-card flex items-center gap-7 z-50">

@@ -11,8 +11,8 @@ export type ChatMessage = {
 type AiChatDrawerProps = {
   isOpen: boolean;
   onClose: () => void;
-  // Callback when user hits send (you can connect your backend logic here)
-  onSendPrompt?: (prompt: string) => Promise<void> | void;
+  // Callback when user hits send (returns optional reply string from AI)
+  onSendPrompt?: (prompt: string, history: ChatMessage[]) => Promise<{ reply?: string } | void> | void;
 };
 
 export default function AiChatDrawer({ isOpen, onClose, onSendPrompt }: AiChatDrawerProps) {
@@ -22,7 +22,7 @@ export default function AiChatDrawer({ isOpen, onClose, onSendPrompt }: AiChatDr
     {
       id: "welcome-1",
       sender: "ai",
-      text: "Hey there! 🎨 Tell me what diagram, flowchart, or structure you want to build and I'll help you draw it on the board!",
+      text: "Hey! 🎨 I'm your DrawForge AI. I can draw diagrams from scratch, add details, change colors, remove shapes, or organize layouts so nothing overlaps. Tell me what you'd like to do!",
       time: "Just now",
     },
   ]);
@@ -45,30 +45,35 @@ export default function AiChatDrawer({ isOpen, onClose, onSendPrompt }: AiChatDr
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const nextHistory = [...messages, userMsg];
+    setMessages(nextHistory);
     setInputPrompt("");
     setIsLoading(true);
 
     try {
+      let aiResponseText = "Done! Whiteboard updated. ✨";
       if (onSendPrompt) {
-        await onSendPrompt(text);
+        const result = await onSendPrompt(text, nextHistory);
+        if (result && result.reply) {
+          aiResponseText = result.reply;
+        }
       }
 
-      // Add AI confirmation message
+      // Add AI response message
       const aiReply: ChatMessage = {
         id: crypto.randomUUID(),
         sender: "ai",
-        text: `Got it! Generated the structure for "${text}". Check your whiteboard! ✨`,
+        text: aiResponseText,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages((prev) => [...prev, aiReply]);
-    } catch (err) {
+    } catch (err: any) {
       setMessages((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
           sender: "ai",
-          text: "Oops, something went wrong while drawing. Please try again!",
+          text: err?.response?.data?.message || err?.message || "Oops, something went wrong while updating the board. Please try again!",
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -78,16 +83,19 @@ export default function AiChatDrawer({ isOpen, onClose, onSendPrompt }: AiChatDr
   };
 
   const quickPrompts = [
-    "User Authentication Flowchart",
-    "Microservices Architecture",
-    "Kanban Board (To-Do, Doing, Done)",
-    "React Component Lifecycle Mindmap",
+    "Draw user login flowchart",
+    "Add more detail & steps to it",
+    "Make colors aesthetic & colorful",
+    "Don't overlap & align neatly",
+    "Add a database & cache layer",
+    "Remove the database box",
   ];
 
   if (!isOpen) return null;
 
   return (
     <div
+      data-ai-drawer
       className="fixed top-0 right-0 h-full w-[340px] sm:w-[400px] z-[60] flex flex-col bg-[#FFFDF6] border-l-2 border-[#2B2B2A] shadow-[-6px_0_0_rgba(43,43,42,0.15)] transition-all duration-300 ease-in-out"
       style={{
         fontFamily: "'Patrick Hand', cursive",

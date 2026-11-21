@@ -18,6 +18,7 @@ type CanvasProps = {
 
 export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, shapes, setShapes, commitShapes, onCursorMove }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const currentPathRef = useRef<Point[]>([]);
@@ -39,30 +40,33 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
   );
 
   useEffect(() => {
-    const handleResize = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
+    const canvas = canvasRef.current;
+    const viewport = canvas?.parentElement;
+    if (!canvas || !viewport) return;
 
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-
+    const resize = () => {
+      const bounds = viewport.getBoundingClientRect();
+      const width = Math.max(1, Math.round(bounds.width));
+      const height = Math.max(1, Math.round(bounds.height));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
       const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      ctx.lineWidth = 2;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "black";
-      ctxRef.current = ctx;
-
-      redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom, selectedShapeId);
+      if (ctx) {
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "black";
+        ctxRef.current = ctx;
+      }
+      setCanvasSize((current) => current.width === width && current.height === height ? current : { width, height });
     };
 
-    // Initial setup
-    handleResize();
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [shapes, pan, zoom, selectedShapeId]);
+    const observer = new ResizeObserver(resize);
+    observer.observe(viewport);
+    resize();
+    return () => observer.disconnect();
+  }, [setPan]);
 
   useEffect(() => {
     const ctx = ctxRef.current;
@@ -71,13 +75,16 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
     if (!ctx || !canvas) return;
 
     redrawCanvas(ctx, canvas, getRenderShapes(), pan, zoom, selectedShapeId);
-  }, [shapes, pan, zoom, selectedShapeId]);
+  }, [shapes, pan, zoom, selectedShapeId, canvasSize]);
 
   const getWorldCoordinates = (clientX: number, clientY: number) => {
+    const bounds = canvasRef.current?.getBoundingClientRect();
     const scale = zoom / 100;
+    const rawX = (clientX - (bounds?.left ?? 0) - pan.x) / scale;
+    const rawY = (clientY - (bounds?.top ?? 0) - pan.y) / scale;
     return {
-      x: (clientX - pan.x) / scale,
-      y: (clientY - pan.y) / scale,
+      x: rawX,
+      y: rawY,
     };
   };
 
@@ -175,7 +182,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
           const dxWorld = dxClient / scale;
           const dyWorld = dyClient / scale;
           
-          setShapes(prev => prev.map(s => 
+          setShapes(prev => prev.map(s =>
               s.id === selectedShapeId ? translateShape(s, dxWorld, dyWorld) : s
           ));
           setDragStartPoint({ x: e.clientX, y: e.clientY });
@@ -374,7 +381,7 @@ export default function Canvas({ tool, zoom, pan, setPan, color, strokeWidth, sh
     <>
       <canvas
         ref={canvasRef}
-        className={`absolute inset-0 bg-transparent touch-none ${
+        className={`absolute inset-0 w-full h-full bg-transparent touch-none ${
         tool === "pointer"
           ? drawing ? "cursor-grabbing" : "cursor-grab"
           : "cursor-crosshair"
